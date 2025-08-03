@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Data Deletion Status</title>
+</head>
+<body>
+  <h1>Data Deletion Status</h1>
+  <p>Enter your confirmation code to check the status of your data deletion request.</p>
+  <form action="/auth/client/facebook/data-deletion-status" method="POST">
+    <input type="text" name="confirmation_code" placeholder="e.g., del_123456">
+    <button type="submit">Check Status</button>
+  </form>
+</body>
+</html>
