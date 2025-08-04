@@ -124,6 +124,7 @@ passport.use(new FacebookStrategy({
   callbackURL: process.env.FACEBOOK_REDIRECT_URI,
   profileFields: ['id', 'emails', 'name'],
   passReqToCallback: true,
+   enableProof: true,
   state: true, // Enable state parameter
 }, async (req, accessToken, refreshToken, profile, done) => {
   try {
