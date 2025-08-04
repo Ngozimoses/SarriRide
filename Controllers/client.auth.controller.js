@@ -514,7 +514,7 @@ const ClientGoogleCallback = async (req, res, next) => {
 
 const ClientFacebookAuth = (req, res, next) => {
   const state = generateStateToken({ authType: 'facebook', redirectUrl: req.query.redirectUrl || '' });
-  passport.authenticate('facebook', { scope: ['email'], state })(req, res, next);
+  passport.authenticate('facebook', { scope: ['email'], state: stateToken })(req, res, next);
 };
 
 const ClientFacebookCallback = async (req, res, next) => {
