@@ -516,7 +516,7 @@ const ClientFacebookAuth = (req, res, next) => {
   const state = generateStateToken({ authType: 'facebook', redirectUrl: req.query.redirectUrl || '' });
   passport.authenticate('facebook',
      { 
-      // scope: ['email'], 
+      scope: ['email'], 
       enableProof: true, 
       state: state })(req, res, next);
 };
