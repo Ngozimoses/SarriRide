@@ -514,10 +514,24 @@ const ClientGoogleCallback = async (req, res, next) => {
 
 const ClientFacebookAuth = (req, res, next) => {
   const state = generateStateToken({ authType: 'facebook', redirectUrl: req.query.redirectUrl || '' });
-  passport.authenticate('facebook', { scope: ['email'], state: stateToken })(req, res, next);
+  passport.authenticate('facebook', { scope: ['email'], state })(req, res, next);
 };
 
 const ClientFacebookCallback = async (req, res, next) => {
+  
+ const { state } = req.query;
+
+    if (!state) {
+      return res.status(400).json({ error: 'Missing state token' });
+    }
+
+    try {
+      const decoded = jwt.verify(state, CONFIG.JWT_SECRET);
+      req.statePayload = decoded; // Optional, if you need it later
+    } catch (err) {
+      return res.status(400).json({ error: 'Invalid state token' });
+    }
+
   passport.authenticate('facebook', { session: false }, async (err, client) => {
     try {
       if (err || !client) {
