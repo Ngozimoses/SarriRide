@@ -531,7 +531,7 @@ const ClientFacebookCallback = async (req, res, next) => {
     }
 
     try {
-      const decoded = jwt.verify(state, CONFIG.JWT_SECRET);
+      const decoded = jwt.verify(state, process.env.JWT_SECRET);
       req.statePayload = decoded; // Optional, if you need it later
     } catch (err) {
       return res.status(400).json({ error: 'Invalid state token' });
