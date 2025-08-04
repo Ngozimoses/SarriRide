@@ -125,7 +125,7 @@ passport.use(new FacebookStrategy({
   profileFields: ['id', 'emails', 'name'],
   passReqToCallback: true,
    enableProof: true,
-  state: true, // Enable state parameter
+  // state: true, // Enable state parameter
 }, async (req, accessToken, refreshToken, profile, done) => {
   try {
     // Validate state token
