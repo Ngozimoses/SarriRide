@@ -58,7 +58,7 @@ router.post(
   '/user/reset-password',
   [
     check('resetTokenId').notEmpty().withMessage('Reset token ID required'),
-    check('resetCode')
+    check('resetCode').isString()
     .matches(/^\d{6}$/)
     .withMessage('Valid 6-digit reset code required'),
     check('password').isLength({ min: 8 }).withMessage('Password must be at least 8 characters'),
