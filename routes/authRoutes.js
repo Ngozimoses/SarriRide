@@ -58,7 +58,9 @@ router.post(
   '/user/reset-password',
   [
     check('resetTokenId').notEmpty().withMessage('Reset token ID required'),
-    check('resetCode').isNumeric().isLength({ min: 6, max: 6 }).withMessage('Valid 6-digit reset code required'),
+    check('resetCode')
+    .matches(/^\d{6}$/)
+    .withMessage('Valid 6-digit reset code required'),
     check('password').isLength({ min: 8 }).withMessage('Password must be at least 8 characters'),
     check('role').isIn(['client', 'driver', 'admin', 'rider']).withMessage('Valid role is required'),
   ],
