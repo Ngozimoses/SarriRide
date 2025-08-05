@@ -55,7 +55,7 @@ router.post('/client/logout', refreshTokenValidation, ClientLogout, authMiddlewa
 router.post('/client/verify-otp', VerifyOtp);
 
 router.post(
-  '/reset-password',
+  '/user/reset-password',
   [
     check('resetTokenId').notEmpty().withMessage('Reset token ID required'),
     check('resetCode').isNumeric().isLength({ min: 6, max: 6 }).withMessage('Valid 6-digit reset code required'),
@@ -66,7 +66,7 @@ router.post(
 );
 
 router.post(
-  '/forgot-password',
+  '/user/forgot-password',
   [
     check('email').isEmail().withMessage('Valid email is required'),
     check('role').isIn(['client', 'driver', 'admin', 'rider']).withMessage('Valid role is required'),
