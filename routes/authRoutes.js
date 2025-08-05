@@ -1,6 +1,6 @@
 const express = require('express');
 const { rateLimit } = require('express-rate-limit');
-const { body } = require('express-validator');
+const { body, check } = require('express-validator');
 
 const {
   ClientRegistration,
@@ -25,13 +25,10 @@ const {
   loginValidation,
   refreshTokenValidation,
 } = require('../middlewares/Validation');
-const {authMiddleware,UpdatePassword,ForgotPassword} = require('../middlewares/auth.js');
-const{ VerifyOtp} = require('../middlewares/auth');
+const {authMiddleware} = require('../middlewares/auth.js');
+const{ VerifyOtp,UpdatePassword,ForgotPassword} = require('../middlewares/auth');
 const { ClientGoogleAuth, ClientGoogleCallback, ClientFacebookAuth, ClientFacebookCallback } = require('../Controllers/client.auth.controller')
-
-
 const router = express.Router();
-
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 10,
@@ -58,7 +55,7 @@ router.post('/client/logout', refreshTokenValidation, ClientLogout, authMiddlewa
 router.post('/client/verify-otp', VerifyOtp);
 
 router.post(
-  '/reset-password',
+  '/user/reset-password',
   [
     check('resetTokenId').notEmpty().withMessage('Reset token ID required'),
     check('resetCode').isNumeric().isLength({ min: 6, max: 6 }).withMessage('Valid 6-digit reset code required'),
@@ -69,7 +66,7 @@ router.post(
 );
 
 router.post(
-  '/forgot-password',
+  '/user/forgot-password',
   [
     check('email').isEmail().withMessage('Valid email is required'),
     check('role').isIn(['client', 'driver', 'admin', 'rider']).withMessage('Valid role is required'),
