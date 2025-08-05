@@ -109,5 +109,7 @@ const startServer = async () => {
     process.exit(1);
   }
 };
+const setupSwagger = require('./swagger');
+setupSwagger(app);
 
 startServer();
