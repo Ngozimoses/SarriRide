@@ -25,7 +25,7 @@ const {
   loginValidation,
   refreshTokenValidation,
 } = require('../middlewares/Validation');
-const {authMiddleware} = require('../middlewares/auth.js');
+const {authMiddleware,UpdatePassword,ForgotPassword} = require('../middlewares/auth.js');
 const{ VerifyOtp} = require('../middlewares/auth');
 const { ClientGoogleAuth, ClientGoogleCallback, ClientFacebookAuth, ClientFacebookCallback } = require('../Controllers/client.auth.controller')
 
@@ -56,6 +56,26 @@ router.post('/client/login', loginLimiter, loginValidation, ClientLogin, authMid
 router.post('/client/refresh-token', refreshLimiter, refreshTokenValidation, ClientRefreshToken);
 router.post('/client/logout', refreshTokenValidation, ClientLogout, authMiddleware('client'));
 router.post('/client/verify-otp', VerifyOtp);
+
+router.post(
+  '/reset-password',
+  [
+    check('resetTokenId').notEmpty().withMessage('Reset token ID required'),
+    check('resetCode').isNumeric().isLength({ min: 6, max: 6 }).withMessage('Valid 6-digit reset code required'),
+    check('password').isLength({ min: 8 }).withMessage('Password must be at least 8 characters'),
+    check('role').isIn(['client', 'driver', 'admin', 'rider']).withMessage('Valid role is required'),
+  ],
+  UpdatePassword
+);
+
+router.post(
+  '/forgot-password',
+  [
+    check('email').isEmail().withMessage('Valid email is required'),
+    check('role').isIn(['client', 'driver', 'admin', 'rider']).withMessage('Valid role is required'),
+  ],
+  ForgotPassword
+);
 
 router.post('/driver/register', registrationValidation, DriverRegistration);
 router.post('/driver/login', loginLimiter, loginValidation, DriverLogin, authMiddleware('driver'));

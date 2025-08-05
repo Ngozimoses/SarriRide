@@ -190,7 +190,6 @@ const authMiddleware = (requiredRole = null) => {
     }
   };
 };
-
 const ForgotPassword = async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -198,54 +197,57 @@ const ForgotPassword = async (req, res) => {
       logger.warn('Validation failed during forgot password', { errors: errors.array() });
       return res.status(400).json({ status: 'error', message: 'Invalid request', data: { errors: errors.array() } });
     }
-
     const { email, role } = req.body;
     const sanitizedEmail = email.trim().toLowerCase();
-    const sanitizedRole = role ? role.trim().toLowerCase() : undefined;
+    const sanitizedRole = role.trim().toLowerCase();
 
-    if (!sanitizedRole || !CONFIG.ALLOWED_ROLES.includes(sanitizedRole)) {
-      logger.warn('Invalid or missing role in forgot password request', { role: sanitizedRole });
+    if (!CONFIG.ALLOWED_ROLES.includes(sanitizedRole)) {
+      logger.warn('Invalid role in forgot password request', { role: sanitizedRole });
       return res.status(400).json({ status: 'error', message: `Valid role (${CONFIG.ALLOWED_ROLES.join(', ')}) required` });
     }
 
     const Model = modelMap[sanitizedRole];
-    if (!Model) {
-      logger.warn('Invalid model for role', { role: sanitizedRole });
-      return res.status(400).json({ status: 'error', message: 'Invalid role' });
-    }
-
     const user = await Model.findOne({ email: sanitizedEmail, role: sanitizedRole });
-    if (!user) {
-      logger.info('Forgot password attempt for non-existent account', { email: sanitizedEmail, role: sanitizedRole });
-      return res.status(200).json({ status: 'success', message: 'If an account exists, a reset link has been sent.' });
+
+    if (!user || !user.password) {
+      logger.info('Forgot password attempt for non-existent or OAuth account', { email: sanitizedEmail, role: sanitizedRole });
+      return res.status(200).json({ status: 'success', message: 'If an account exists, a reset code has been sent.' });
     }
 
     const resetToken = crypto.randomBytes(64).toString('hex');
     const salt = crypto.randomBytes(16);
     const resetTokenId = uuidv4();
-    const hashedResetToken = crypto.pbkdf2Sync(resetToken, salt, 100000, 64, 'sha512').toString('hex');
+    const hashedResetToken = crypto.pbkdf2Sync(resetToken, salt, 10000, 64, 'sha512').toString('hex');
+    const resetCode = crypto.randomInt(100000, 999999).toString(); // 6-digit code for email
 
     user.resetToken = hashedResetToken;
     user.resetTokenSalt = salt.toString('hex');
     user.resetTokenId = resetTokenId;
     user.resetTokenExpires = Date.now() + CONFIG.RESET_TOKEN_EXPIRY_MS;
+    user.resetCode = resetCode;
 
     await user.save();
 
-    const resetLink = `${process.env.BACKEND_URL}/auth/reset-password/${resetTokenId}/${resetToken}`;
+    const cacheKey = `${CONFIG.REDIS_KEY_PREFIX}reset:${resetTokenId}`;
+    await redis.set(cacheKey, JSON.stringify({ resetCode, email: sanitizedEmail, role: sanitizedRole }), 'EX', Math.floor(CONFIG.RESET_TOKEN_EXPIRY_MS / 1000));
+
     try {
       await sendEmail(
         sanitizedEmail,
-        'Password Reset',
-        `Click to reset your password: ${resetLink}\nExpires in 15 minutes.`
+        'Password Reset Code',
+        `Your password reset code is: ${resetCode}\nExpires in 15 minutes.`
       );
     } catch (emailErr) {
       logger.error('Failed to send password reset email', { error: emailErr.message, email: sanitizedEmail });
-      return res.status(500).json({ status: 'error', message: 'Failed to send reset email' });
+      return res.status(500).json({ status: 'error', message: 'Failed to send reset code' });
     }
 
-    logger.info('Password reset link sent', { email: sanitizedEmail, role: sanitizedRole });
-    return res.status(200).json({ status: 'success', message: 'If an account exists, a reset link has been sent.' });
+    logger.info('Password reset code sent', { email: sanitizedEmail, role: sanitizedRole });
+    return res.status(200).json({
+      status: 'success',
+      message: 'Reset code sent to email.',
+      data: { resetTokenId } // Return tokenId for mobile app
+    });
   } catch (error) {
     logger.error('Forgot password error', { error: error.message, email: req.body.email });
     return res.status(500).json({ status: 'error', message: 'An unexpected error occurred' });
@@ -260,45 +262,42 @@ const UpdatePassword = async (req, res) => {
       return res.status(400).json({ status: 'error', message: 'Invalid request', data: { errors: errors.array() } });
     }
 
-    const { tokenId, token, password, role } = req.body;
-    const sanitizedRole = role ? role.trim().toLowerCase() : undefined;
+    const { resetTokenId, resetCode, password, role } = req.body;
+    const sanitizedRole = role.trim().toLowerCase();
 
-    if (!sanitizedRole || !CONFIG.ALLOWED_ROLES.includes(sanitizedRole)) {
-      logger.warn('Invalid or missing role in update password request', { role: sanitizedRole });
+    if (!CONFIG.ALLOWED_ROLES.includes(sanitizedRole)) {
+      logger.warn('Invalid role in update password request', { role: sanitizedRole });
       return res.status(400).json({ status: 'error', message: `Valid role (${CONFIG.ALLOWED_ROLES.join(', ')}) required` });
     }
 
     const Model = modelMap[sanitizedRole];
-    if (!Model) {
-      logger.warn('Invalid model for role', { role: sanitizedRole });
-      return res.status(400).json({ status: 'error', message: 'Invalid role' });
-    }
-
     const user = await Model.findOne({
-      resetTokenId: tokenId,
+      resetTokenId,
       resetTokenExpires: { $gt: Date.now() },
       role: sanitizedRole,
     });
 
-    if (!user) {
-      logger.warn('Invalid or expired password reset link', { tokenId, role: sanitizedRole });
-      return res.status(400).json({ status: 'error', message: 'Invalid or expired password reset link' });
+    if (!user || !user.resetCode || user.resetCode !== resetCode) {
+      logger.warn('Invalid or expired password reset code', { resetTokenId, role: sanitizedRole });
+      return res.status(400).json({ status: 'error', message: 'Invalid or expired reset code' });
     }
 
-    const saltBuffer = Buffer.from(user.resetTokenSalt, 'hex');
-    const hashedToken = crypto.pbkdf2Sync(token, saltBuffer, 100000, 64, 'sha512').toString('hex');
-    if (hashedToken !== user.resetToken) {
-      logger.warn('Invalid reset token', { tokenId, role: sanitizedRole });
-      return res.status(400).json({ status: 'error', message: 'Invalid security token' });
-    }
+    // Clear Redis cache
+    const cacheKey = `${CONFIG.REDIS_KEY_PREFIX}reset:${resetTokenId}`;
+    await redis.del(cacheKey);
 
     user.password = await bcrypt.hash(password, 10);
     user.resetToken = undefined;
     user.resetTokenSalt = undefined;
     user.resetTokenId = undefined;
     user.resetTokenExpires = undefined;
+    user.resetCode = undefined;
 
     await user.save();
+
+    // Update user cache
+    const userCacheKey = `${CONFIG.REDIS_KEY_PREFIX}user:${user.email}:${sanitizedRole}`;
+    await redis.set(userCacheKey, JSON.stringify(user), 'EX', CONFIG.USER_CACHE_TTL || 3600);
 
     logger.info('Password updated successfully', { userId: user._id, role: sanitizedRole });
     return res.status(200).json({ status: 'success', message: 'Password updated successfully' });
@@ -307,6 +306,7 @@ const UpdatePassword = async (req, res) => {
     return res.status(500).json({ status: 'error', message: 'An unexpected error occurred' });
   }
 };
+
 
 const VerifyOtp = async (req, res) => {
   try {
