@@ -57,6 +57,7 @@ const clientSchema = new mongoose.Schema({
   resetTokenExpires: {
     type: Date,
   },
+  resetCode: { type: String },
   role: {
     type: String,
     enum: ['client'],
