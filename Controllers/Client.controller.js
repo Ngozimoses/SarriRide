@@ -1,7 +1,20 @@
 const { check, validationResult } = require('express-validator');
 const Pricing = require('../models/PricingSchema');
 const { calculateDistance } = require('../utils/distanceCalculator');
-const logger = require('../utils/logger');
+const winston = require('winston');
+
+const logger = winston.createLogger({
+  level: 'info',
+  format: winston.format.combine(
+    winston.format.timestamp(),
+    winston.format.json()
+  ),
+  transports: [
+    new winston.transports.Console(),
+    new winston.transports.File({ filename: 'logs/error.log', level: 'error' }),
+    new winston.transports.File({ filename: 'logs/combined.log' })
+  ]
+});
 
 const calculateRidePrice = async (req, res) => {
   try {
