@@ -1,3 +1,4 @@
+
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 
@@ -22,6 +23,15 @@ const PricingSchema = new Schema({
     type: Number,
     required: true,
     min: 0,
+  },
+  seats: {
+    type: Number,
+    required: true,
+    min: 1,
+    validate: {
+      validator: Number.isInteger,
+      message: '{VALUE} is not an integer value for seats'
+    }
   },
   updatedAt: {
     type: Date,
