@@ -25,6 +25,9 @@ const {
   loginValidation,
   refreshTokenValidation,
 } = require('../middlewares/Validation');
+
+
+
 const {authMiddleware} = require('../middlewares/auth.js');
 const{ VerifyOtp,UpdatePassword,ForgotPassword} = require('../middlewares/auth');
 const { ClientGoogleAuth, ClientGoogleCallback, ClientFacebookAuth, ClientFacebookCallback } = require('../Controllers/client.auth.controller')
@@ -40,6 +43,8 @@ const refreshLimiter = rateLimit({
   max: 50,
   message: { status: 'error', message: 'Too many refresh attempts, please try again later' },
 });
+
+
 
 router.get('/client/google', loginLimiter, ClientGoogleAuth);
 router.get('/client/google/callback', loginLimiter, ClientGoogleCallback);
@@ -85,7 +90,8 @@ router.post('/admin/login', loginLimiter, loginValidation, AdminLogin, authMiddl
 router.post('/admin/refresh-token', refreshLimiter, refreshTokenValidation, AdminRefreshToken, authMiddleware('admin'));
 router.post('/admin/logout', refreshTokenValidation, AdminLogout, authMiddleware('admin'));
 
-// Example protected routes
+
+
 router.get('/client/profile', authMiddleware('client'), (req, res) => {
   res.json({ status: 'success', message: 'Client profile', user: req.user });
 });
