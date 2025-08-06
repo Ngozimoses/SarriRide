@@ -1,6 +1,6 @@
 const { check, validationResult } = require('express-validator');
 const Pricing = require('../models/PricingSchema');
-const { calculateDistance } = require('../utils/distance');
+const { calculateDistance } = require('../utils/distanceCalculator');
 const winston = require('winston');
 
 const logger = winston.createLogger({
