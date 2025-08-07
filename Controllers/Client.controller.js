@@ -162,7 +162,7 @@ const calculateRidePrice = async (req, res) => {
         return res.status(500).json({ status: 'error', message: 'Failed to calculate distance' });
       }
       distanceKm = distanceMeters / 1000;
-     await redis.set(cacheKey, distanceKm.toString(), { EX: 3600 });
+    await redis.set(cacheKey, distanceKm.toString(), 'EX', 3600);
     }
 
     // Fetch pricing from MongoDB
