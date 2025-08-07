@@ -9,12 +9,7 @@ const {
   ClientLogout,
   ClientFacebookDataDeletion
 } = require('../Controllers/client.auth.controller');
-const {
-  DriverRegistration,
-  DriverLogin,
-  DriverRefreshToken,
-  DriverLogout,
-} = require('../Controllers/Driver.controller.js');
+
 const {
   AdminLogin,
   AdminRefreshToken,
@@ -81,10 +76,6 @@ router.post(
   ForgotPassword
 );
 
-router.post('/driver/register', registrationValidation, DriverRegistration);
-router.post('/driver/login', loginLimiter, loginValidation, DriverLogin, authMiddleware('driver'));
-router.post('/driver/refresh-token', refreshLimiter, refreshTokenValidation, DriverRefreshToken);
-router.post('/driver/logout', refreshTokenValidation, DriverLogout, authMiddleware('driver'));
 
 router.post('/admin/login', loginLimiter, loginValidation, AdminLogin, authMiddleware('admin'));
 router.post('/admin/refresh-token', refreshLimiter, refreshTokenValidation, AdminRefreshToken, authMiddleware('admin'));
