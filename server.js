@@ -1,4 +1,4 @@
-const passport = require('./passport'); // Loads strategies
+const {passport} = require('./passport'); // Loads strategies
 const express = require('express');
 const mongoose = require('mongoose');
 const helmet = require('helmet');
