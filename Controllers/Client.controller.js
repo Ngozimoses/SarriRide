@@ -1,4 +1,4 @@
-const { check, validationResult } = require('express-validator');
+const { validationResult } = require('express-validator');
 const Pricing = require('../models/PricingSchema');
 const { calculateDistance } = require('../utils/distanceCalculator');
 const redis = require('../Config/redis');
