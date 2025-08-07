@@ -153,6 +153,7 @@ const authMiddleware = (requiredRole = null) => {
       if (user.role === 'client') {
         const client = await Client.findOne({ userId: user._id }).lean();
         req.user.client = client || null;
+        logger.info('Client profile attached to request', { userId: user._id, clientId: client ? client._id : null });
       }
 
       if (requiredRole) {
