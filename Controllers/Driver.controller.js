@@ -2,7 +2,7 @@
 const { check, validationResult } = require('express-validator');
 const Driver = require('../models/Driver');
 const winston = require('winston');
-const { uploadToCloudinary } = require('.../Config/cloudinary');
+const { uploadToCloudinary } = require('../Config/cloudinary');
 const crypto = require('crypto');
 const redis = require('../Config/redis');
 const sendEmail = require('../utils/sendMail'); // Assuming same sendEmail as ClientRegistration
