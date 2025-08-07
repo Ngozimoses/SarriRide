@@ -7,7 +7,7 @@ const calculatePriceLimiter = rateLimit({
   max: 100,
   message: { status: 'error', message: 'Too many requests, please try again later' },
 });
-const authMiddleware = require('../middlewares/auth.js');
+const {authMiddleware} = require('../middlewares/auth.js');
 
 const { calculateRidePrice, endTrip } = require('../Controllers/Client.controller.js');
 
