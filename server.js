@@ -1,5 +1,6 @@
 const {passport} = require('./passport'); // Loads strategies
 const express = require('express');
+const { rateLimit } = require('express-rate-limit');
 const mongoose = require('mongoose');
 const helmet = require('helmet');
 const cors = require('cors');
