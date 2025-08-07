@@ -1,4 +1,4 @@
-require('./passport'); // Loads strategies
+const passport = require('./passport'); // Loads strategies
 const express = require('express');
 const mongoose = require('mongoose');
 const helmet = require('helmet');
@@ -51,6 +51,7 @@ app.use(cors({
 }));
 app.use(express.json()); // Parse JSON bodies
 app.use(express.urlencoded({ extended: true })); // Parse URL-encoded bodies
+
 
 // Global rate limiter
 const globalLimiter = rateLimit({
