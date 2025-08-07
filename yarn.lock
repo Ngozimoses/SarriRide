@@ -382,7 +382,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"axios@npm:^1.7.4":
+"axios@npm:^1.11.0, axios@npm:^1.7.4":
   version: 1.11.0
   resolution: "axios@npm:1.11.0"
   dependencies:
@@ -3008,6 +3008,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "rider-backend@workspace:."
   dependencies:
+    axios: "npm:^1.11.0"
     bcryptjs: "npm:^3.0.2"
     cloudinary: "npm:^2.7.0"
     connect-mongo: "npm:^5.1.0"
