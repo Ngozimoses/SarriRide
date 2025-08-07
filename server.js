@@ -7,9 +7,7 @@ const winston = require('winston');
 const redis = require('./Config/redis'); 
 const authRoutes = require('./routes/authRoutes'); 
 const ClientRideRoutes = require('./routes/clientRide.routes'); // Assuming this is the correct path
-const DriverRoutes = require ('./routes/auth.Driver.routes')
-const { rateLimit } = require('express-rate-limit');
-const passport = require('passport');
+const driverRoutes = require ('./routes/auth.Driver.routes'); // Assuming this is the correct path
 const path = require('path');
 
 // Initialize Express app
@@ -79,7 +77,7 @@ const connectMongoDB = async () => {
 // Routes
 app.use('/auth', authRoutes);
 app.use('/clientRide', ClientRideRoutes);
-app.use('/driver', DriverRoutes);
+app.use('/driverAuth', driverRoutes);
 
 // Health check endpoint
 app.get('/health', async (req, res) => {
