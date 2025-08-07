@@ -1,5 +1,6 @@
 const { check, validationResult } = require('express-validator');
 const Driver = require('../models/Driver');
+const Client = require('../models/Client'); // Added import for Client model
 const winston = require('winston');
 const { uploadToCloudinary } = require('../Config/cloudinary');
 const crypto = require('crypto');
@@ -49,7 +50,14 @@ const verifyEmail = async (req, res) => {
     await redis.incr(rateLimitKey);
     await redis.expire(rateLimitKey, CONFIG.LOGIN_RATE_LIMIT.WINDOW_MS / 1000);
 
-    // Check if email is already registered
+    // Check if email is already registered in Client collection
+    const existingClient = await Client.findOne({ email: sanitizedEmail }).lean();
+    if (existingClient) {
+      logger.warn('Email already registered as a client', { email: sanitizedEmail });
+      return res.status(400).json({ status: 'error', message: 'Email already registered as a client' });
+    }
+
+    // Check if email is already registered in Driver collection
     let driver = await Driver.findOne({ email: sanitizedEmail }).lean();
     if (driver && driver.isVerified) {
       logger.warn('Email already verified', { email: sanitizedEmail });
