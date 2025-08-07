@@ -1,6 +1,6 @@
 const { check, validationResult } = require('express-validator');
 const Driver = require('../models/Driver');
-const Client = require('../models/Client'); // Added import for Client model
+const Client = require('../models/Client');
 const winston = require('winston');
 const { uploadToCloudinary } = require('../Config/cloudinary');
 const crypto = require('crypto');
@@ -40,6 +40,15 @@ const verifyEmail = async (req, res) => {
     const { email } = req.body;
     const sanitizedEmail = email.trim().toLowerCase();
 
+    // Check if email is registered in Client collection
+    const existingClient = await Client.findOne({ email: sanitizedEmail }).lean();
+    if (existingClient) {
+      logger.warn('Email already registered as a client', { email: sanitizedEmail, clientId: existingClient._id });
+      return res.status(400).json({ status: 'error', message: 'Email already registered as a client' });
+    } else {
+      logger.info('No client found with email', { email: sanitizedEmail });
+    }
+
     // Rate-limiting for verification attempts
     const rateLimitKey = `${CONFIG.REDIS_KEY_PREFIX}verify-email:${sanitizedEmail}`;
     const attempts = await redis.get(rateLimitKey);
@@ -49,13 +58,6 @@ const verifyEmail = async (req, res) => {
     }
     await redis.incr(rateLimitKey);
     await redis.expire(rateLimitKey, CONFIG.LOGIN_RATE_LIMIT.WINDOW_MS / 1000);
-
-    // Check if email is already registered in Client collection
-    const existingClient = await Client.findOne({ email: sanitizedEmail }).lean();
-    if (existingClient) {
-      logger.warn('Email already registered as a client', { email: sanitizedEmail });
-      return res.status(400).json({ status: 'error', message: 'Email already registered as a client' });
-    }
 
     // Check if email is already registered in Driver collection
     let driver = await Driver.findOne({ email: sanitizedEmail }).lean();
@@ -185,11 +187,18 @@ const registerDriver = async (req, res) => {
       bankDetails, vehicleDetails
     } = req.body;
 
-    // Check if email is verified
+    // Check if email is verified in Driver collection
     const driver = await Driver.findOne({ email: email.trim().toLowerCase() });
     if (!driver || !driver.isVerified) {
       logger.warn('Email not verified for registration', { email: email.trim().toLowerCase() });
       return res.status(400).json({ status: 'error', message: 'Email must be verified before registration' });
+    }
+
+    // Check if email is registered in Client collection
+    const existingClient = await Client.findOne({ email: email.trim().toLowerCase() }).lean();
+    if (existingClient) {
+      logger.warn('Email already registered as a client', { email: email.trim().toLowerCase() });
+      return res.status(400).json({ status: 'error', message: 'Email already registered as a client' });
     }
 
     // Manually validate required fields
