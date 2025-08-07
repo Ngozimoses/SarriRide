@@ -3,6 +3,7 @@ const Pricing = require('../models/PricingSchema');
 const { calculateDistance } = require('../utils/distanceCalculator');
 const redis = require('../Config/redis');
 const Trip = require('../models/Trip');
+import axios from 'axios';
 
 const winston = require('winston');
 
