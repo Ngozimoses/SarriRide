@@ -286,7 +286,7 @@ const UpdatePassword = async (req, res) => {
     const cacheKey = `${CONFIG.REDIS_KEY_PREFIX}reset:${resetTokenId}`;
     await redis.del(cacheKey);
 
-    user.password = await bcrypt.hash(password, 10);
+    user.password = password;
     user.resetToken = undefined;
     user.resetTokenSalt = undefined;
     user.resetTokenId = undefined;
