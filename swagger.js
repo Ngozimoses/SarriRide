@@ -17,8 +17,7 @@ const options = {
       },
     ],
   },
-  // apis: ['./routes/*.js'], // Points to your annotated routes
-   apis: ['./routes/authRoutes.js']
+  apis: ['./routes/*.js'], // Points to your annotated routes
 };
 
 const specs = swaggerJsdoc(options);
