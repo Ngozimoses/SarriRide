@@ -1,6 +1,7 @@
 const express = require('express');
 const passport = require('passport');
 const { rateLimit } = require('express-rate-limit');
+const { body, check } = require('express-validator');
 const router = express.Router();
 const {
   registrationValidation,
