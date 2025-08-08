@@ -28,11 +28,6 @@ module.exports = (app) => {
     swaggerUi.setup(specs, {
       swaggerOptions: {
         requestInterceptor: (req) => {
-          // Auto open Google login in a new tab for this specific endpoint
-          if (req.url.endsWith('/auth/client/google')) {
-            window.open(req.url, '_blank');
-            return {}; // Prevent Swagger from actually trying to fetch JSON
-          }
           return req;
         }
       }
