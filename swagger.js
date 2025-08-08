@@ -1,3 +1,4 @@
+// swagger.js
 const swaggerJsdoc = require('swagger-jsdoc');
 const swaggerUi = require('swagger-ui-express');
 
@@ -28,6 +29,13 @@ module.exports = (app) => {
     swaggerUi.setup(specs, {
       swaggerOptions: {
         requestInterceptor: (req) => {
+          // Detect the Google login initiation endpoint
+          if (req.url.endsWith('/auth/client/google')) {
+            // Open the Google login in a new browser tab
+            window.open(req.url, '_blank');
+            // Prevent Swagger from actually making the AJAX request
+            return {};
+          }
           return req;
         }
       }
