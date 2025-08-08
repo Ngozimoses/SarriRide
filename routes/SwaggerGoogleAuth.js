@@ -205,7 +205,59 @@ router.post('/client/register', registrationValidation, ClientRegistration);
  */
 
 router.post('/client/verify-otp', VerifyOtp);
+/**
+ * @swagger
+ * /auth/client/login:
+ *   post:
+ *     summary: Client login
+ *     tags: [Authentication]
+ *     description: >
+ *       Logs in a client using email and password.  
+ *       Returns client info with access and refresh tokens on success.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *               - password
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: elijahOg99@gmail.com
+ *               password:
+ *                 type: string
+ *                 example: securePass123
+ *     responses:
+ *       200:
+ *         description: Login successful
+ *         content:
+ *           application/json:
+ *             example:
+ *               status: success
+ *               message: Login successful
+ *               data:
+ *                 client:
+ *                   name: John
+ *                   _id: 6895f83ce8fd2cab75782eb9
+ *                   email: elijahOg99@gmail.com
+ *                   role: client
+ *                   isVerified: true
+ *                 accessToken: d7e71c975bc5b4ac555415f6c85eeb22:b12848ad43053a039737a2765624a51e5894104eb03426d6745373f089fde5601c77b79292d02d78a3b405c0af1b5ffd901f210b4b5e3fcf3f3ecb7640560f1f35773940c85c26dcf017a8139dc294e3637058923d745576c2e4fa711301ac54580be003d1d485d9a2f53d98c96e7e68f57cbad69a32a715517952ceed7f5ad40a882632e8768e197f5f134b7a670dfcdc720c37c79a7de01018b4fbe02b380d2a23399555efc06f7e679d35ad55fd502ef42e08e650c27c2ef411b574a9f15efe367e278e7bf6058a577249b84aade9
+ *                 refreshToken: 8b4e49af2498c51174cd3a7dd8562929:dbb4e7eeed37222e940efdce44966254b5eea3e7112671c5d6c06218f04b81a4dc8cdfe02a75610f23fc469ab90dea0bc677fc1f4f0e8d9a928367ae4018c1ba80b45979c87a3efb1da399a00fc53b81e440193efc794a4551f8ebee586ccfde2e047d2fa550a53bcf9c47cc422f2e3a5448cff49310fb5a4fe4c07dd9a6e4b91afe2b3caca4941a847e06c3c77ede04
+ *       401:
+ *         description: Unauthorized – invalid email or password
+ *       500:
+ *         description: Internal server error
+ */
+
 router.post('/client/login', loginLimiter, loginValidation, ClientLogin, authMiddleware('client'));
+
+
+
 router.post(
   '/user/reset-password',
   [
