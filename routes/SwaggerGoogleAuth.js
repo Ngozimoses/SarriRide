@@ -57,9 +57,9 @@ router.get('/auth/client/google',
  *               message: Google login successful
  *               data:
  *                 client:
- *                   name: Elijah
- *                   _id: 6891f47102d7b380d09deb6e
- *                   email: elijahog99@gmail.com
+ *                   name: Eli
+ *                   _id: 6891f47102d7b380d09d
+ *                   email: eli@gmail.com
  *                   role: client
  *                   isVerified: true
  *                 accessToken: a6bf0206e506ad5820c687a1529b627a:...

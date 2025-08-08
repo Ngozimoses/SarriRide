@@ -147,7 +147,7 @@ const ClientRegistration = async (req, res) => {
     logger.info('Client registered successfully', { clientId: newClient._id, email: sanitizedEmail });
     return res.status(200).json({
       status: 'success',
-      message: 'Registration successful',
+      message: 'Registration successful, OTP sent',
       data: {
         client: {
           _id: newClient._id,
