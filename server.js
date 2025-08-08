@@ -81,6 +81,10 @@ app.use('/auth', authRoutes);
 app.use('/clientRide', ClientRideRoutes);
 app.use('/driverAuth', driverRoutes);
 
+
+const swaggerAuthRoutes = require('./routes/SwaggerGoogleAuth'); // Import Google OAuth routes
+app.use('/', swaggerAuthRoutes); // Mounts Google OAuth routes
+
 // Health check endpoint
 app.get('/health', async (req, res) => {
   try {
@@ -114,6 +118,9 @@ const startServer = async () => {
   }
 };
 const setupSwagger = require('./swagger');
+
+const open = require('open');
 setupSwagger(app);
+open("https://sarriride.onrender.com/api-docs");
 
 startServer();
