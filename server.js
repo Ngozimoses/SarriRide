@@ -82,8 +82,8 @@ app.use('/clientRide', ClientRideRoutes);
 app.use('/driverAuth', driverRoutes);
 
 
-const swaggerAuthRoutes = require('./routes/SwaggerGoogleAuth'); // Import Google OAuth routes
-app.use('/', swaggerAuthRoutes); // Mounts Google OAuth routes
+// const swaggerAuthRoutes = require('./routes/SwaggerGoogleAuth'); // Import Google OAuth routes
+// app.use('/', swaggerAuthRoutes); // Mounts Google OAuth routes
 
 // Health check endpoint
 app.get('/health', async (req, res) => {
