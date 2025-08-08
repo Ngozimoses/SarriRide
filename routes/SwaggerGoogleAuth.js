@@ -1,5 +1,6 @@
 const express = require('express');
-const passport = require('passport'); // Assuming you use passport-google-oauth20
+const passport = require('passport');
+const { rateLimit } = require('express-rate-limit');
 const router = express.Router();
 const {
   registrationValidation,
