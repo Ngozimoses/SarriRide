@@ -7,6 +7,12 @@ const {
   refreshTokenValidation,
 } = require('../middlewares/Validation');
 const{ VerifyOtp,UpdatePassword,ForgotPassword} = require('../middlewares/auth');
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  message: { status: 'error', message: 'Too many login attempts, please try again later' },
+});
+
 const {
   ClientRegistration,
   ClientLogin,
@@ -197,6 +203,27 @@ router.post('/client/register', registrationValidation, ClientRegistration);
  */
 
 router.post('/client/verify-otp', VerifyOtp);
+router.post('/client/login', loginLimiter, loginValidation, ClientLogin, authMiddleware('client'));
+router.post(
+  '/user/reset-password',
+  [
+    check('resetTokenId').notEmpty().withMessage('Reset token ID required'),
+    check('resetCode').isString()
+    .matches(/^\d{6}$/)
+    .withMessage('Valid 6-digit reset code required'),
+    check('password').isLength({ min: 8 }).withMessage('Password must be at least 8 characters'),
+    check('role').isIn(['client', 'driver', 'admin', 'rider']).withMessage('Valid role is required'),
+  ],
+  UpdatePassword
+);
+router.post(
+  '/user/forgot-password',
+  [
+    check('email').isEmail().withMessage('Valid email is required'),
+    check('role').isIn(['client', 'driver', 'admin', 'rider']).withMessage('Valid role is required'),
+  ],
+  ForgotPassword
+);
 
 
 module.exports = router;
