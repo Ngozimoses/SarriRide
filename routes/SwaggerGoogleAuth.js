@@ -148,7 +148,7 @@ router.get('/auth/client/google/callback',
  *               data:
  *                 client:
  *                   _id: 6895e7cf8773671f9cdb8e08
- *                   email: elijahog99@gmail.com
+ *                   email: eli@gmail.com
  *                   role: client
  *                   isVerified: false
  */
@@ -173,7 +173,7 @@ router.post('/client/register', registrationValidation, ClientRegistration);
  *             properties:
  *               email:
  *                 type: string
- *                 example: elijahog99@gmail.com
+ *                 example: eli@gmail.com
  *               otp:
  *                 type: string
  *                 example: "509526"
@@ -195,7 +195,7 @@ router.post('/client/register', registrationValidation, ClientRegistration);
  *               data:
  *                 user:
  *                   _id: 6895f83ce8fd2cab75782eb9
- *                   email: elijahog99@gmail.com
+ *                   email: el@gmail.com
  *                   role: client
  *                   isVerified: true
  *       400:
@@ -227,7 +227,7 @@ router.post('/client/verify-otp', VerifyOtp);
  *               email:
  *                 type: string
  *                 format: email
- *                 example: elijahOg99@gmail.com
+ *                 example: el@gmail.com
  *               password:
  *                 type: string
  *                 example: securePass123
@@ -243,7 +243,7 @@ router.post('/client/verify-otp', VerifyOtp);
  *                 client:
  *                   name: John
  *                   _id: 6895f83ce8fd2cab75782eb9
- *                   email: elijahOg99@gmail.com
+ *                   email: el99@gmail.com
  *                   role: client
  *                   isVerified: true
  *                 accessToken: d7e71c975bc5b4ac555415f6c85eeb22:b12848ad43053a039737a2765624a51e5894104eb03426d6745373f089fde5601c77b79292d02d78a3b405c0af1b5ffd901f210b4b5e3fcf3f3ecb7640560f1f35773940c85c26dcf017a8139dc294e3637058923d745576c2e4fa711301ac54580be003d1d485d9a2f53d98c96e7e68f57cbad69a32a715517952ceed7f5ad40a882632e8768e197f5f134b7a670dfcdc720c37c79a7de01018b4fbe02b380d2a23399555efc06f7e679d35ad55fd502ef42e08e650c27c2ef411b574a9f15efe367e278e7bf6058a577249b84aade9
@@ -257,6 +257,64 @@ router.post('/client/verify-otp', VerifyOtp);
 router.post('/client/login', loginLimiter, loginValidation, ClientLogin, authMiddleware('client'));
 
 
+/**
+ * @swagger
+ * /auth/user/reset-password:
+ *   post:
+ *     summary: Reset user password
+ *     tags: [Authentication]
+ *     description: >
+ *       Resets the user's password using the `resetTokenId` and `resetCode` sent via email.  
+ *       **Important:** The `resetTokenId` must be extracted from the response of the `/auth/user/forgot-password` endpoint and used here.  
+ *       The `role` must be set according to the account type:  
+ *       - "client" for normal users  
+ *       - "driver" for drivers  
+ *       - "admin" for administrators
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - resetTokenId
+ *               - resetCode
+ *               - password
+ *               - role
+ *             properties:
+ *               resetTokenId:
+ *                 type: string
+ *                 format: uuid
+ *                 example: b90d3fa7-d71f-4864-b863-f0f70f160ccd
+ *                 description: >
+ *                   Token obtained from the forgot-password response, to verify this reset request.
+ *               resetCode:
+ *                 type: string
+ *                 example: "118938"
+ *                 description: 6-digit code sent to the user's email.
+ *               password:
+ *                 type: string
+ *                 example: OgElijah
+ *                 description: New password to set.
+ *               role:
+ *                 type: string
+ *                 enum: [client, driver, admin]
+ *                 example: client
+ *                 description: >
+ *                   Role of the account. Must correspond to the user type.
+ *     responses:
+ *       200:
+ *         description: Password updated successfully
+ *         content:
+ *           application/json:
+ *             example:
+ *               status: success
+ *               message: Password updated successfully
+ *       400:
+ *         description: Invalid reset code or token
+ *       500:
+ *         description: Server error
+ */
 
 router.post(
   '/user/reset-password',
@@ -270,6 +328,48 @@ router.post(
   ],
   UpdatePassword
 );
+/**
+ * @swagger
+ * /auth/user/forgot-password:
+ *   post:
+ *     summary: Request password reset
+ *     tags: [Authentication]
+ *     description: >
+ *       Sends a reset code to the user's email.  
+ *       The `resetTokenId` in the response should be extracted and stored by the frontend developer for subsequent reset verification and **should NOT be displayed to the user**.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *               - role
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: eli@gmail.com
+ *               role:
+ *                 type: string
+ *                 example: client
+ *     responses:
+ *       200:
+ *         description: Reset code sent successfully
+ *         content:
+ *           application/json:
+ *             example:
+ *               status: success
+ *               message: Reset code sent to email.
+ *               data:
+ *                 resetTokenId: b90d3fa7-d71f-4864-b863-f0f70f160ccd
+ *       400:
+ *         description: Invalid email or role
+ *       500:
+ *         description: Server error
+ */
+
 router.post(
   '/user/forgot-password',
   [
