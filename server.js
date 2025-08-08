@@ -119,7 +119,7 @@ const startServer = async () => {
 };
 const setupSwagger = require('./swagger');
 
-const open = require('open');
+const open = require('open').default;
 setupSwagger(app);
 open("https://sarriride.onrender.com/api-docs");
 
