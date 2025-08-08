@@ -42,7 +42,7 @@ router.post('/driver/register', [
   check('vehicleDetails.model').notEmpty().withMessage('Vehicle model is required'),
   check('vehicleDetails.year').isNumeric().withMessage('Vehicle year must be a number'),
   check('vehicleDetails.licensePlate').notEmpty().withMessage('Vehicle license plate is required')
-], registerDriver);
+], registerDriver, uploadImages);
 router.post('/driver/upload-images', [
 ], uploadImages);
 

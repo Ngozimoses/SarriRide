@@ -262,10 +262,10 @@ const registerDriver = async (req, res) => {
     }
 
     // Validate required images
-    if (!frontsideImageUrl || !backsideImageUrl) {
-      logger.warn('Missing required license images', { email: email.trim().toLowerCase() });
-      return res.status(400).json({ status: 'error', message: 'Frontside and backside license images are required' });
-    }
+    // if (!frontsideImageUrl || !backsideImageUrl) {
+    //   logger.warn('Missing required license images', { email: email.trim().toLowerCase() });
+    //   return res.status(400).json({ status: 'error', message: 'Frontside and backside license images are required' });
+    // }
 
     // Check for duplicates
     const existingDriver = await Driver.findOne({
