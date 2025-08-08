@@ -6,6 +6,7 @@ const {
   loginValidation,
   refreshTokenValidation,
 } = require('../middlewares/Validation');
+const{ VerifyOtp,UpdatePassword,ForgotPassword} = require('../middlewares/auth');
 const {
   ClientRegistration,
   ClientLogin,
@@ -145,6 +146,57 @@ router.get('/auth/client/google/callback',
  */
 
 router.post('/client/register', registrationValidation, ClientRegistration);
+/**
+ * @swagger
+ * /auth/client/verify-otp:
+ *   post:
+ *     summary: Verify client OTP
+ *     tags: [Authentication]
+ *     description: >
+ *       Verifies the One-Time Password (OTP) for a client account.  
+ *       This endpoint checks the provided OTP against the one sent to the client's email or phone.  
+ *       A successful verification marks the client as verified.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 example: elijahog99@gmail.com
+ *               otp:
+ *                 type: string
+ *                 example: "509526"
+ *               role:
+ *                 type: string
+ *                 example: client
+ *             required:
+ *               - email
+ *               - otp
+ *               - role
+ *     responses:
+ *       200:
+ *         description: Verification successful
+ *         content:
+ *           application/json:
+ *             example:
+ *               status: success
+ *               message: Verification successful
+ *               data:
+ *                 user:
+ *                   _id: 6895f83ce8fd2cab75782eb9
+ *                   email: elijahog99@gmail.com
+ *                   role: client
+ *                   isVerified: true
+ *       400:
+ *         description: Invalid or expired OTP
+ *       500:
+ *         description: Server error
+ */
+
+router.post('/client/verify-otp', VerifyOtp);
 
 
 module.exports = router;
