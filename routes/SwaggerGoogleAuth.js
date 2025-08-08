@@ -1,6 +1,18 @@
 const express = require('express');
 const passport = require('passport'); // Assuming you use passport-google-oauth20
 const router = express.Router();
+const {
+  registrationValidation,
+  loginValidation,
+  refreshTokenValidation,
+} = require('../middlewares/Validation');
+const {
+  ClientRegistration,
+  ClientLogin,
+  ClientRefreshToken,
+  ClientLogout,
+  ClientFacebookDataDeletion
+} = require('../Controllers/client.auth.controller');
 
 /**
  * @swagger
@@ -85,5 +97,54 @@ router.get('/auth/client/google/callback',
     });
   }
 );
+
+/**
+ * @swagger
+ * /auth/client/register:
+ *   post:
+ *     summary: Register a new client
+ *     tags: [Authentication]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *               - FirstName
+ *               - LastName
+ *               - password
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 example: eli99@gmail.com
+ *               FirstName:
+ *                 type: string
+ *                 example: John
+ *               LastName:
+ *                 type: string
+ *                 example: Doe
+ *               password:
+ *                 type: string
+ *                 example: securePass123
+ *     responses:
+ *       200:
+ *         description: Registration successful Otp sent
+ *         content:
+ *           application/json:
+ *             example:
+ *               status: success
+ *               message: Registration successful, OTP sent
+ *               data:
+ *                 client:
+ *                   _id: 6895e7cf8773671f9cdb8e08
+ *                   email: elijahog99@gmail.com
+ *                   role: client
+ *                   isVerified: false
+ */
+
+router.post('/client/register', registrationValidation, ClientRegistration);
+
 
 module.exports = router;
