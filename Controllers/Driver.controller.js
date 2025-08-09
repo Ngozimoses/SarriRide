@@ -1,20 +1,46 @@
 const { check, validationResult } = require('express-validator');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
 const Driver = require('../models/Driver');
 const Client = require('../models/Client');
+const sanitizeHtml = require('sanitize-html');
 const winston = require('winston');
 const { uploadToCloudinary } = require('../Config/cloudinary');
 const crypto = require('crypto');
 const redis = require('../Config/redis');
 const sendEmail = require('../utils/sendMail');
 const sanitizeHtml = require('sanitize-html');
+const RefreshToken = require('../models/RefreshToken');
+const { encrypt, decrypt } = require('../utils/encryptDecrypt');
+
 const CONFIG = {
   REDIS_KEY_PREFIX: 'sarriride:',
+  JWT_ACCESS_TOKEN_EXPIRY: '15m',
+  REFRESH_TOKEN_EXPIRY_DAYS: 7,
+  ACCOUNT_LOCK_DURATION_MS: 15 * 60 * 1000, // 15 minutes
+   MAX_LOGIN_ATTEMPTS: 10,
   OTP_EXPIRY_MS: 15 * 60 * 1000, // 15 minutes
   LOGIN_RATE_LIMIT: {
     MAX_ATTEMPTS: 5,
     WINDOW_MS: 15 * 60 * 1000 // 15 minutes
-  }
+  },
+    USER_CACHE_TTL: 3600, // 1 hour
 };
+
+// const CONFIG = {
+//   JWT_ACCESS_TOKEN_EXPIRY: '15m',
+//   REFRESH_TOKEN_EXPIRY_DAYS: 7,
+//   OTP_EXPIRY_MS: 3600000, // 1 hour
+//   MAX_LOGIN_ATTEMPTS: 5,
+//   ACCOUNT_LOCK_DURATION_MS: 15 * 60 * 1000, // 15 minutes
+//   REDIS_KEY_PREFIX: 'auth:', // Prefix for Redis keys
+//   LOGIN_RATE_LIMIT: {
+//     WINDOW_MS: 15 * 60 * 1000, // 15 minutes
+//     MAX_ATTEMPTS: 15, // Max login attempts per window
+//   },
+//   USER_CACHE_TTL: 3600, // 1 hour
+// };
 
 const logger = winston.createLogger({
   level: 'info',
@@ -28,6 +54,126 @@ const logger = winston.createLogger({
     new winston.transports.File({ filename: 'logs/combined.log' })
   ]
 });
+
+
+
+
+const DriverLogin = async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      logger.warn('Validation failed during client login', { errors: errors.array() });
+      return res.status(400).json({ status: 'error', message: 'Invalid credentials', data: { errors: errors.array() } });
+    }
+
+    const { email, password, } = req.body;
+    const sanitizedEmail = email ? email.trim().toLowerCase() : undefined;
+    const sanitizedPassword = password ? password.trim() : undefined;
+
+    // Rate-limiting for login attempts
+    const rateLimitKey = `${CONFIG.REDIS_KEY_PREFIX}login:${sanitizedEmail }`;
+    const attempts = await redis.get(rateLimitKey);
+    if (attempts && parseInt(attempts) >= CONFIG.LOGIN_RATE_LIMIT.MAX_ATTEMPTS) {
+      logger.warn('Login rate limit exceeded', { email: sanitizedEmail});
+      return res.status(429).json({ status: 'error', message: 'Too many login attempts. Try again later.' });
+    }
+    await redis.incr(rateLimitKey);
+    await redis.expire(rateLimitKey, CONFIG.LOGIN_RATE_LIMIT.WINDOW_MS / 1000);
+
+    const query = {
+      $or: [
+        ...(sanitizedEmail ? [{ email: sanitizedEmail, role: 'driver' }] : []),
+      ],
+    };
+
+    let driver;
+    const cacheKey = `${CONFIG.REDIS_KEY_PREFIX}user:${sanitizedEmail}:driver`;
+    const cachedDriver = await redis.get(cacheKey);
+    if (cachedDriver) {
+      driver = JSON.parse(cachedDriver);
+    } else {
+      driver = await Driver.findOne(query).select('+password').lean();
+      if (driver) {
+        await redis.set(cacheKey, JSON.stringify(driver), 'EX', 3600); // Cache for 1 hour
+      }
+    }
+
+    if (!driver) {
+      logger.warn('Driver account does not exist', { email: sanitizedEmail });
+      return res.status(400).json({ status: 'error', message: 'Account does not exist' });
+    }
+
+    if (driver.lockUntil && driver.lockUntil > Date.now()) {
+      logger.warn('Driver account locked', { email: driver.email });
+      return res.status(403).json({ status: 'error', message: 'Account locked. Try again later.' });
+    }
+
+    if (sanitizedPassword) {
+      if (!driver.password) {
+        logger.warn('Password login attempted for third-party driver account', { email: driver.email });
+        return res.status(403).json({ status: 'error', message: 'Please use third-party sign-in' });
+      }
+      const isMatch = await bcrypt.compare(sanitizedPassword, driver.password);
+      if (!isMatch) {
+        await Driver.updateOne(
+          { _id: driver._id },
+          { $inc: { failedLoginAttempts: 1 }, $set: { lockUntil: driver.failedLoginAttempts + 1 >= CONFIG.MAX_LOGIN_ATTEMPTS ? Date.now() + CONFIG.ACCOUNT_LOCK_DURATION_MS : null } }
+        );
+        await redis.del(cacheKey); // Invalidate cache on update
+        logger.warn('Invalid password attempt for client', { email: client.email, attempts: client.failedLoginAttempts + 1 });
+        return res.status(400).json({ status: 'error', message: 'Invalid email or password' });
+      }
+    }
+    await Driver.updateOne({ _id: driver._id }, { $set: { failedLoginAttempts: 0, lockUntil: null } });
+    await redis.del(cacheKey); // Invalidate cache after update
+
+    if (!driver.isVerified && process.env.NODE_ENV !== 'test') {
+      logger.warn('Unverified driver email login attempt', { email: driver.email });
+      return res.status(403).json({ status: 'error', message: 'Email not verified' });
+    }
+
+    const accessToken = jwt.sign({ id: driver._id, role: driver.role }, process.env.JWT_SECRET, {
+      expiresIn: CONFIG.JWT_ACCESS_TOKEN_EXPIRY,
+    });
+    const refreshToken = crypto.randomBytes(64).toString('hex');
+    const hashedToken = await bcrypt.hash(refreshToken, 10);
+    const refreshTokenExpires = new Date();
+    refreshTokenExpires.setDate(refreshTokenExpires.getDate() + CONFIG.REFRESH_TOKEN_EXPIRY_DAYS);
+
+    const newRefreshToken = new RefreshToken({
+      userId: driver._id,
+      userModel: 'Driver',
+      token: hashedToken,
+      expiresAt: refreshTokenExpires,
+      userAgent: req.headers['user-agent'] || 'unknown',
+      ipAddress: req.ip || 'unknown',
+    });
+    await newRefreshToken.save();
+
+    const encryptedAccessToken = encrypt(accessToken);
+    const encryptedRefreshToken = encrypt(refreshToken);
+
+    logger.info('Client logged in successfully', { clientId: client._id, email: client.email });
+    return res.status(200).json({
+      status: 'success',
+      message: 'Login successful',
+      data: {
+        driver: {
+          name: driver.FirstName,
+          _id: driver._id,
+          email: driver.email,
+          role: driver.role,
+          isVerified: driver.isVerified,
+        },
+        accessToken: encryptedAccessToken,
+        refreshToken: encryptedRefreshToken,
+      },
+    });
+  } catch (error) {
+    logger.error('Client login error', { error: error.message, email: req.body.email });
+    return res.status(500).json({ status: 'error', message: 'An unexpected error occurred' });
+  }
+};
 
 const verifyEmail = async (req, res) => {
   try {
