@@ -578,10 +578,10 @@ const uploadImages = async (req, res) => {
     if (picture) {
       updates.picture = await uploadToCloudinary(picture[0].buffer, 'profile', driverId);
     }
-    if (frontsideImage) {
+    if (frontsideImage && !req.user.adminVerified) {
       updates['drivingLicense.frontsideImage'] = await uploadToCloudinary(frontsideImage[0].buffer, 'license_front', driverId);
     }
-    if (backsideImage) {
+    if (backsideImage && !req.user.adminVerified) {
       updates['drivingLicense.backsideImage'] = await uploadToCloudinary(backsideImage[0].buffer, 'license_back', driverId);
     }
 
