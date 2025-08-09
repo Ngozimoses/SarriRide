@@ -62,7 +62,7 @@ router.post('/driver/upload-images',
     { name: 'frontsideImage', maxCount: 1 },
     { name: 'backsideImage', maxCount: 1 }
   ]),
-  uploadImages
+  uploadImages, authMiddleware('driver')
 );
 
 router.post('/driver/login', DriverLogin, authMiddleware('driver'), loginValidation, loginLimiter);
