@@ -327,7 +327,7 @@ const uploadImages = async (req, res) => {
       return res.status(400).json({ status: 'error', message: 'Invalid request', data: { errors: errors.array() } });
     }
 
-    const { picture, frontsideImage, backsideImage } = req.files;
+    const { picture, frontsideImage, backsideImage } = req.files || {};
 
     // If uploading profile picture, user must be authenticated
     if (picture && (!req.user || !req.user._id)) {
