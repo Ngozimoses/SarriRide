@@ -118,7 +118,7 @@ const DriverLogin = async (req, res) => {
           { $inc: { failedLoginAttempts: 1 }, $set: { lockUntil: driver.failedLoginAttempts + 1 >= CONFIG.MAX_LOGIN_ATTEMPTS ? Date.now() + CONFIG.ACCOUNT_LOCK_DURATION_MS : null } }
         );
         await redis.del(cacheKey); // Invalidate cache on update
-        logger.warn('Invalid password attempt for client', { email: client.email, attempts: client.failedLoginAttempts + 1 });
+        logger.warn('Invalid password attempt for driver', { email: driver.email, attempts: driver.failedLoginAttempts + 1 });
         return res.status(400).json({ status: 'error', message: 'Invalid email or password' });
       }
     }
@@ -151,7 +151,7 @@ const DriverLogin = async (req, res) => {
     const encryptedAccessToken = encrypt(accessToken);
     const encryptedRefreshToken = encrypt(refreshToken);
 
-    logger.info('Client logged in successfully', { clientId: client._id, email: client.email });
+    logger.info('Client logged in successfully', { clientId: driver._id, email: client.email });
     return res.status(200).json({
       status: 'success',
       message: 'Login successful',
