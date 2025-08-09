@@ -7,7 +7,6 @@ const Client = require('../models/Client');
 const sanitizeHtml = require('sanitize-html');
 const winston = require('winston');
 const { uploadToCloudinary } = require('../Config/cloudinary');
-const crypto = require('crypto');
 const redis = require('../Config/redis');
 const sendEmail = require('../utils/sendMail');
 const sanitizeHtml = require('sanitize-html');
@@ -596,7 +595,7 @@ const uploadImages = async (req, res) => {
   }
 };
 
-module.exports = { verifyEmail, verifyDriverOtp, registerDriver, uploadImages };
+module.exports = { verifyEmail, verifyDriverOtp, registerDriver, uploadImages, DriverLogin };
 // const { check, validationResult } = require('express-validator');
 // const Driver = require('../models/Driver');
 // const winston = require('winston');

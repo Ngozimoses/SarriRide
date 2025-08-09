@@ -4,7 +4,14 @@ const { body, check } = require('express-validator');
 const multer = require('multer');
 const router = express.Router();
 const {verifyEmail, verifyDriverOtp, registerDriver, uploadImages} = require('../Controllers/Driver.controller.js');
-
+const { loginValidation } = require('../middlewares/Validation');
+const {authMiddleware} = require('../middlewares/auth.js');
+const {DriverLogin} = require('../Controllers/Driver.controller.js');
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  message: { status: 'error', message: 'Too many login attempts, please try again later' },
+});
 router.post('/driver/verifyDriverEmail', [
   check('email').isEmail().withMessage('Valid email is required'),
 ], verifyEmail);
@@ -58,5 +65,5 @@ router.post('/driver/upload-images',
   uploadImages
 );
 
-
+router.post('/driver/login', DriverLogin, authMiddleware('driver'), loginValidation, loginLimiter);
 module.exports = router;
