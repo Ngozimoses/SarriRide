@@ -9,7 +9,6 @@ const winston = require('winston');
 const { uploadToCloudinary } = require('../Config/cloudinary');
 const redis = require('../Config/redis');
 const sendEmail = require('../utils/sendMail');
-const sanitizeHtml = require('sanitize-html');
 const RefreshToken = require('../models/RefreshToken');
 const { encrypt, decrypt } = require('../utils/encryptDecrypt');
 
