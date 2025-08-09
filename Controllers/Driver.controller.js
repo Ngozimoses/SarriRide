@@ -463,6 +463,29 @@ const registerDriver = async (req, res) => {
     return res.status(500).json({ status: 'error', message: 'An unexpected error occurred' });
   }
 };
+
+
+
+//  "accessToken": "1078ed5e220e81841c24602c6a7759ca:fd11eb7d7d58d9795c51d8ab9a2a43325318066de3ea0da30f6765bfcc6fe5475c48021e314c8fa3fad6ff717c2be123bd510a544d43ffe48fb4e65b76a7cc00d4166ee860a21f223658016f01d90aae788e0a11135e2eb394ecb9b0f1b68b40186e5c906b667e63609dc5c9f6ef8969c7814b880cb3b11b8e26d30c1e722b39b1ffa6308926a74af139c7d44580290302558c7d2337307953a8ca8b68845f1d91bfde17b6772c4785e5707ec5fff9ea3fd3acc44597f199c20f8977bab87d591f475abd7094083ca14d5d42801bae2d",
+//         "refreshToken": "2be2e24fb9b79dc4dcd8460f60124637:2acd692e04954d396124e644f49659584c0cdf1afa857321c01c136f8209d619393bbab47ca68d2e9a732e99fdee27e8459307ef66e7a53da30b5d5340106c9ea2b46dcf71700200349c8c4181b4f5aaad4754dba69fad7fd36cc2ba68ae82458eb20cc3172a08b9b2992f926f98c282d852ea1fb2b7e3cbf40781c3d6b7cc1cc1f6d7cb1a858fa71ecbfb8cc236e310"
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 // const uploadImages = async (req, res) => {
 //   try {
 //     const errors = validationResult(req);
@@ -547,6 +570,7 @@ const uploadImages = async (req, res) => {
     }
 
     const driverId = req.user._id;
+    logger.info('Driver ID for image upload', { driverId });
     const { picture, frontsideImage, backsideImage } = req.files;
 
     const updates = {};
