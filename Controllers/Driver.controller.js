@@ -319,7 +319,6 @@ const registerDriver = async (req, res) => {
     return res.status(500).json({ status: 'error', message: 'An unexpected error occurred' });
   }
 };
-
 const uploadImages = async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -328,8 +327,15 @@ const uploadImages = async (req, res) => {
       return res.status(400).json({ status: 'error', message: 'Invalid request', data: { errors: errors.array() } });
     }
 
-    const driverId = req.user._id;
     const { picture, frontsideImage, backsideImage } = req.files;
+
+    // If uploading profile picture, user must be authenticated
+    if (picture && (!req.user || !req.user._id)) {
+      logger.warn('Unauthorized: Missing user info for profile picture upload');
+      return res.status(401).json({ status: 'error', message: 'Unauthorized - user ID required for profile picture upload' });
+    }
+
+    const driverId = req.user?._id;
 
     const updates = {};
 
@@ -348,33 +354,101 @@ const uploadImages = async (req, res) => {
       return res.status(400).json({ status: 'error', message: 'At least one image is required' });
     }
 
-    const driver = await Driver.findByIdAndUpdate(
-      driverId,
-      { $set: updates },
-      { new: true, select: '_id picture drivingLicense.frontsideImage drivingLicense.backsideImage' }
-    );
+    // If driverId exists, update the driver's DB record
+    if (driverId) {
+      const driver = await Driver.findByIdAndUpdate(
+        driverId,
+        { $set: updates },
+        { new: true, select: '_id picture drivingLicense.frontsideImage drivingLicense.backsideImage' }
+      );
 
-    if (!driver) {
-      logger.warn('Driver not found for image upload', { driverId });
-      return res.status(404).json({ status: 'error', message: 'Driver not found' });
+      if (!driver) {
+        logger.warn('Driver not found for image upload', { driverId });
+        return res.status(404).json({ status: 'error', message: 'Driver not found' });
+      }
+
+      logger.info('Images uploaded successfully', { driverId, updates });
+      return res.status(200).json({
+        status: 'success',
+        message: 'Images uploaded successfully',
+        data: {
+          driverId: driver._id,
+          picture: driver.picture,
+          frontsideImage: driver.drivingLicense.frontsideImage,
+          backsideImage: driver.drivingLicense.backsideImage,
+        },
+      });
     }
 
-    logger.info('Images uploaded successfully', { driverId, updates });
+    // No driverId, so just return the uploaded image URLs
+    logger.info('Images uploaded successfully without driver ID', { updates });
     return res.status(200).json({
       status: 'success',
       message: 'Images uploaded successfully',
-      data: {
-        driverId: driver._id,
-        picture: driver.picture,
-        frontsideImage: driver.drivingLicense.frontsideImage,
-        backsideImage: driver.drivingLicense.backsideImage
-      }
+      data: updates,
     });
+
   } catch (error) {
     logger.error('Image upload error', { driverId: req.user?._id, error: error.message });
     return res.status(500).json({ status: 'error', message: 'An unexpected error occurred' });
   }
 };
+
+// const uploadImages = async (req, res) => {
+//   try {
+//     const errors = validationResult(req);
+//     if (!errors.isEmpty()) {
+//       logger.warn('Validation failed for image upload', { errors: errors.array(), driverId: req.user?._id });
+//       return res.status(400).json({ status: 'error', message: 'Invalid request', data: { errors: errors.array() } });
+//     }
+
+//     const driverId = req.user._id;
+//     const { picture, frontsideImage, backsideImage } = req.files;
+
+//     const updates = {};
+
+//     if (picture) {
+//       updates.picture = await uploadToCloudinary(picture[0].buffer, 'profile', driverId);
+//     }
+//     if (frontsideImage) {
+//       updates['drivingLicense.frontsideImage'] = await uploadToCloudinary(frontsideImage[0].buffer, 'license_front', driverId);
+//     }
+//     if (backsideImage) {
+//       updates['drivingLicense.backsideImage'] = await uploadToCloudinary(backsideImage[0].buffer, 'license_back', driverId);
+//     }
+
+//     if (Object.keys(updates).length === 0) {
+//       logger.warn('No images provided for upload', { driverId });
+//       return res.status(400).json({ status: 'error', message: 'At least one image is required' });
+//     }
+
+//     const driver = await Driver.findByIdAndUpdate(
+//       driverId,
+//       { $set: updates },
+//       { new: true, select: '_id picture drivingLicense.frontsideImage drivingLicense.backsideImage' }
+//     );
+
+//     if (!driver) {
+//       logger.warn('Driver not found for image upload', { driverId });
+//       return res.status(404).json({ status: 'error', message: 'Driver not found' });
+//     }
+
+//     logger.info('Images uploaded successfully', { driverId, updates });
+//     return res.status(200).json({
+//       status: 'success',
+//       message: 'Images uploaded successfully',
+//       data: {
+//         driverId: driver._id,
+//         picture: driver.picture,
+//         frontsideImage: driver.drivingLicense.frontsideImage,
+//         backsideImage: driver.drivingLicense.backsideImage
+//       }
+//     });
+//   } catch (error) {
+//     logger.error('Image upload error', { driverId: req.user?._id, error: error.message });
+//     return res.status(500).json({ status: 'error', message: 'An unexpected error occurred' });
+//   }
+// };
 
 module.exports = { verifyEmail, verifyDriverOtp, registerDriver, uploadImages };
 // const { check, validationResult } = require('express-validator');
