@@ -151,7 +151,7 @@ const DriverLogin = async (req, res) => {
     const encryptedAccessToken = encrypt(accessToken);
     const encryptedRefreshToken = encrypt(refreshToken);
 
-    logger.info('Client logged in successfully', { clientId: driver._id, email: client.email });
+    logger.info('Driver logged in successfully', { driverId: driver._id, email: driver.email });
     return res.status(200).json({
       status: 'success',
       message: 'Login successful',
