@@ -1,6 +1,7 @@
 const express = require('express');
 const { rateLimit } = require('express-rate-limit');
 const { body, check } = require('express-validator');
+const multer = require('multer');
 const router = express.Router();
 const {verifyEmail, verifyDriverOtp, registerDriver, uploadImages} = require('../Controllers/Driver.controller.js');
 
@@ -43,8 +44,19 @@ router.post('/driver/register', [
   check('vehicleDetails.year').isNumeric().withMessage('Vehicle year must be a number'),
   check('vehicleDetails.licensePlate').notEmpty().withMessage('Vehicle license plate is required')
 ], registerDriver);
-router.post('/driver/upload-images', [
-], uploadImages);
+// router.post('/driver/upload-images', [
+// ], uploadImages);
+
+const storage = multer.memoryStorage();
+const upload = multer({ storage });
+router.post('/driver/upload-images',
+  upload.fields([
+    { name: 'picture', maxCount: 1 },
+    { name: 'frontsideImage', maxCount: 1 },
+    { name: 'backsideImage', maxCount: 1 }
+  ]),
+  uploadImages
+);
 
 
 module.exports = router;
