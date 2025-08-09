@@ -568,21 +568,20 @@ const uploadImages = async (req, res) => {
       logger.warn('Validation failed for image upload', { errors: errors.array(), driverId: req.user?._id });
       return res.status(400).json({ status: 'error', message: 'Invalid request', data: { errors: errors.array() } });
     }
-    const isVerified = await Driver.find({ adminVerified:false, _id:req.user.id})
-    const isAdminVerified = isVerified.adminVerified
+   
     const driverId = req.user._id;
     logger.info('Driver ID for image upload', { driverId });
-    const { picture, frontsideImage, backsideImage } = req.files;
+    const { picture, frontsideImage, backsideImage } = req.files || {};
 
     const updates = {};
 
     if (picture) {
       updates.picture = await uploadToCloudinary(picture[0].buffer, 'profile', driverId);
     }
-    if (frontsideImage && isAdminVerified) {
+    if (frontsideImage) {
       updates['drivingLicense.frontsideImage'] = await uploadToCloudinary(frontsideImage[0].buffer, 'license_front', driverId);
     }
-    if (backsideImage && isAdminVerified) {
+    if (backsideImage) {
       updates['drivingLicense.backsideImage'] = await uploadToCloudinary(backsideImage[0].buffer, 'license_back', driverId);
     }
 
