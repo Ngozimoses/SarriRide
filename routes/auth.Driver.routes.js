@@ -56,13 +56,13 @@ router.post('/driver/register', [
 
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
-router.post('/driver/upload-images',
+router.post('/driver/upload-images', authMiddleware('driver'),
   upload.fields([
     { name: 'picture', maxCount: 1 },
     { name: 'frontsideImage', maxCount: 1 },
     { name: 'backsideImage', maxCount: 1 }
   ]),
-  uploadImages, authMiddleware('driver')
+  uploadImages
 );
 
 router.post('/driver/login', DriverLogin, authMiddleware('driver'), loginValidation, loginLimiter);
