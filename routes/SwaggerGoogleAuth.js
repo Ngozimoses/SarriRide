@@ -2,6 +2,9 @@ const express = require('express');
 const passport = require('passport');
 const { rateLimit } = require('express-rate-limit');
 const { body, check } = require('express-validator');
+const {authMiddleware} = require('../middlewares/auth.js');
+const {DriverLogin} = require('../Controllers/Driver.controller.js');
+const { loginValidation } = require('../middlewares/Validation');
 const router = express.Router();
 const {
   registrationValidation,
@@ -379,6 +382,141 @@ router.post(
   ],
   ForgotPassword
 );
+/**
+ * @swagger
+ * components:
+ *   securitySchemes:
+ *     bearerAuth:
+ *       type: http
+ *       scheme: bearer
+ *       bearerFormat: JWT
+ */
+/**
+ * @swagger
+ * tags:
+ *   - name: Driver
+ *     description: Driver endpoints (uploads, profile, etc.)
+ */
 
+/**
+ * @swagger
+ * /driverAuth/driver/upload-images:
+ *   post:
+ *     summary: Upload driver license images (front & back)
+ *     tags: [Driver]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - frontsideImage
+ *               - backsideImage
+ *             properties:
+ *               frontsideImage:
+ *                 type: string
+ *                 format: binary
+ *                 description: Front side of the driver's license (PNG/JPG). Max 5MB.
+ *               backsideImage:
+ *                 type: string
+ *                 format: binary
+ *                 description: Back side of the driver's license (PNG/JPG). Max 5MB.
+ *               picture:
+ *                 type: string
+ *                 format: binary
+ *                 description: Optional profile picture (PNG/JPG). Max 5MB.
+ *     responses:
+ *       '200':
+ *         description: Images uploaded successfully
+ *         content:
+ *           application/json:
+ *             example:
+ *               status: success
+ *               message: Images uploaded successfully
+ *               data:
+ *                 driverId: "6894d38ba348cb50808a6982"
+ *                 picture: ""
+ *                 frontsideImage: "https://res.cloudinary.com/.../license_f_6894d38...png"
+ *                 backsideImage: "https://res.cloudinary.com/.../license_b_6894d38...png"
+ *       '400':
+ *         description: Bad request - missing files or invalid format
+ *       '401':
+ *         description: Unauthorized - missing or invalid token
+ *       '413':
+ *         description: Payload too large (file exceeded size limit)
+ *       '500':
+ *         description: Internal server error
+ */
+const multer = require('multer');
+const storage = multer.memoryStorage();
+const upload = multer({ storage });
+router.post('/driver/upload-images', authMiddleware('driver'),
+  upload.fields([
+    { name: 'picture', maxCount: 1 },
+    { name: 'frontsideImage', maxCount: 1 },
+    { name: 'backsideImage', maxCount: 1 }
+  ]),
+  uploadImages
+);
+/**
+ * @swagger
+ * tags:
+ *   - name: Driver
+ *     description: Driver authentication and profile management
+ */
 
+/**
+ * @swagger
+ * /driverAuth/driver/login:
+ *   post:
+ *     summary: Driver login
+ *     description: Authenticates a driver with email and password, returning access and refresh tokens.
+ *     tags: [Driver]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *               - password
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: eli@gmail.com
+ *               password:
+ *                 type: string
+ *                 format: password
+ *                 example: strongPass123
+ *     responses:
+ *       '200':
+ *         description: Login successful
+ *         content:
+ *           application/json:
+ *             example:
+ *               status: success
+ *               message: Login successful
+ *               data:
+ *                 driver:
+ *                   name: John
+ *                   _id: 6894d38ba348cb50808a6982
+ *                   email: eli@gmail.com
+ *                   role: driver
+ *                   isVerified: true
+ *                 accessToken: "69fe65cf1679184559301c9a72707014:fe21ca6c7b..."
+ *                 refreshToken: "0f35d633536aadc5563e45d23fea0bde:ce9b27d3f..."
+ *       '400':
+ *         description: Bad request - missing or invalid credentials
+ *       '401':
+ *         description: Unauthorized - incorrect email or password
+ *       '500':
+ *         description: Internal server error
+ */
+
+router.post('/driver/login', DriverLogin, authMiddleware('driver'), loginValidation, loginLimiter);
 module.exports = router;
