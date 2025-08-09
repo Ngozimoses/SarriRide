@@ -128,10 +128,10 @@ const authMiddleware = (requiredRole = null) => {
         return res.status(403).json({ status: 'error', message: `Forbidden - Valid role (${CONFIG.ALLOWED_ROLES.join(', ')}) required` });
       }
 
-      if (user.role === 'driver' && !user.adminVerified && process.env.NODE_ENV !== 'test') {
-        logger.warn('Driver not approved by admin', { userId: user._id });
-        return res.status(403).json({ status: 'error', message: 'Forbidden - Account awaiting admin approval' });
-      }
+      // if (user.role === 'driver' && !user.adminVerified && process.env.NODE_ENV !== 'test') {
+      //   logger.warn('Driver not approved by admin', { userId: user._id });
+      //   return res.status(403).json({ status: 'error', message: 'Forbidden - Account awaiting admin approval' });
+      // }
 
       const isAdminSession = decoded.isAdminSession || false;
       if (requiredRole === 'admin' && (!isAdminSession || user.role !== 'admin')) {
