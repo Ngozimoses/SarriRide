@@ -607,4 +607,158 @@ router.post('/driver/verifyDriverOtp', [
   check('otp').isNumeric().withMessage('Valid OTP is required'),
 ], verifyDriverOtp);
 
+/**
+ * @swagger
+ * /driverAuth/driver/register:
+ *   post:
+ *     summary: Register a new driver
+ *     description: Completes the driver registration process after email verification. Requires driver personal details, license details, address, emergency contact, bank details, and vehicle information.
+ *     tags: [Driver]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *               - FirstName
+ *               - LastName
+ *               - password
+ *               - phoneNumber
+ *               - DateOfBirth
+ *               - Gender
+ *               - licenseNumber
+ *               - drivingLicense
+ *               - currentAddress
+ *               - permanentAddress
+ *               - emergencyContactNumber
+ *               - bankDetails
+ *               - vehicleDetails
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: eli@gmail.com
+ *               FirstName:
+ *                 type: string
+ *                 example: John
+ *               LastName:
+ *                 type: string
+ *                 example: Doe
+ *               password:
+ *                 type: string
+ *                 format: password
+ *                 example: strongPass123
+ *               phoneNumber:
+ *                 type: string
+ *                 example: +2348012345678
+ *               DateOfBirth:
+ *                 type: string
+ *                 format: date
+ *                 example: 1990-05-15
+ *               Gender:
+ *                 type: string
+ *                 enum: [male, female, other]
+ *                 example: male
+ *               licenseNumber:
+ *                 type: string
+ *                 example: DL1234567890
+ *               drivingLicense:
+ *                 type: object
+ *                 required:
+ *                   - issueDate
+ *                   - expiryDate
+ *                 properties:
+ *                   issueDate:
+ *                     type: string
+ *                     format: date
+ *                     example: 2015-04-01
+ *                   expiryDate:
+ *                     type: string
+ *                     format: date
+ *                     example: 2029-04-01
+ *               currentAddress:
+ *                 type: object
+ *                 properties:
+ *                   address: { type: string, example: 123 Main Street }
+ *                   state: { type: string, example: Lagos }
+ *                   city: { type: string, example: Ikeja }
+ *                   country: { type: string, example: Nigeria }
+ *                   postalCode: { type: string, example: 100001 }
+ *               permanentAddress:
+ *                 type: object
+ *                 properties:
+ *                   address: { type: string, example: 456 Elm Street }
+ *                   state: { type: string, example: Lagos }
+ *                   city: { type: string, example: Surulere }
+ *                   country: { type: string, example: Nigeria }
+ *                   postalCode: { type: string, example: 100002 }
+ *               emergencyContactNumber:
+ *                 type: string
+ *                 example: +2348098765432
+ *               bankDetails:
+ *                 type: object
+ *                 properties:
+ *                   bankAccountNumber: { type: string, example: 0123456789 }
+ *                   bankName: { type: string, example: First Bank }
+ *                   bankAccountName: { type: string, example: John Doe }
+ *               vehicleDetails:
+ *                 type: object
+ *                 properties:
+ *                   make: { type: string, example: Toyota }
+ *                   model: { type: string, example: Corolla }
+ *                   year: { type: integer, example: 2018 }
+ *                   licensePlate: { type: string, example: LAG123XY }
+ *     responses:
+ *       '200':
+ *         description: Driver registered successfully
+ *         content:
+ *           application/json:
+ *             example:
+ *               status: success
+ *               message: Driver registered successfully. Awaiting admin verification.
+ *               data:
+ *                 driverId: 689758c6e5a596b9d2380e3c
+ *                 email: elijayboy87@gmail.com
+ *       '400':
+ *         description: Invalid request data
+ *       '401':
+ *         description: Unauthorized or email not verified
+ *       '500':
+ *         description: Internal server error
+ */
+
+
+router.post('/driver/register', [
+  check('email').isEmail().withMessage('Valid email is required'),
+  check('FirstName').notEmpty().withMessage('First name is required'),
+  check('LastName').notEmpty().withMessage('Last name is required'),
+  check('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
+  check('phoneNumber').notEmpty().withMessage('Phone number is required'),
+  check('DateOfBirth').notEmpty().withMessage('Date of birth is required'),
+  check('Gender').notEmpty().withMessage('Gender is required'),
+  check('licenseNumber').notEmpty().withMessage('License number is required'),
+  check('drivingLicense.issueDate').notEmpty().withMessage('License issue date is required'),
+  check('drivingLicense.expiryDate').notEmpty().withMessage('License expiry date is required'),
+  check('currentAddress.address').notEmpty().withMessage('Current address is required'),
+  check('currentAddress.state').notEmpty().withMessage('Current state is required'),
+  check('currentAddress.city').notEmpty().withMessage('Current city is required'),
+  check('currentAddress.country').notEmpty().withMessage('Current country is required'),
+  check('currentAddress.postalCode').notEmpty().withMessage('Current postal code is required'),
+  check('permanentAddress.address').notEmpty().withMessage('Permanent address is required'),
+  check('permanentAddress.state').notEmpty().withMessage('Permanent state is required'),
+  check('permanentAddress.city').notEmpty().withMessage('Permanent city is required'),
+  check('permanentAddress.country').notEmpty().withMessage('Permanent country is required'),
+  check('permanentAddress.postalCode').notEmpty().withMessage('Permanent postal code is required'),
+  check('emergencyContactNumber').notEmpty().withMessage('Emergency contact number is required'),
+  check('bankDetails.bankAccountNumber').notEmpty().withMessage('Bank account number is required'),
+  check('bankDetails.bankName').notEmpty().withMessage('Bank name is required'),
+  check('bankDetails.bankAccountName').notEmpty().withMessage('Bank account name is required'),
+  check('vehicleDetails.make').notEmpty().withMessage('Vehicle make is required'),
+  check('vehicleDetails.model').notEmpty().withMessage('Vehicle model is required'),
+  check('vehicleDetails.year').isNumeric().withMessage('Vehicle year must be a number'),
+  check('vehicleDetails.licensePlate').notEmpty().withMessage('Vehicle license plate is required')
+], registerDriver);
+
 module.exports = router;
