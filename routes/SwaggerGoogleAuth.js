@@ -518,4 +518,93 @@ router.post('/driver/upload-images', authMiddleware('driver'),
  */
 
 router.post('/driver/login', DriverLogin, authMiddleware('driver'), loginValidation, loginLimiter);
+/**
+ * @swagger
+ * /driverAuth/driver/verifyDriverEmail:
+ *   post:
+ *     summary: Verify driver email before registration
+ *     description: Sends an OTP to the provided email address to verify it before continuing with driver registration.
+ *     tags: [Driver]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: eli@gmail.com
+ *     responses:
+ *       '200':
+ *         description: OTP sent successfully
+ *         content:
+ *           application/json:
+ *             example:
+ *               status: success
+ *               message: OTP sent to email for verification
+ *               data:
+ *                 driverId: 689758c6e5a596b9d2380e3c
+ *                 email: eli@gmail.com
+ *       '400':
+ *         description: Bad request - invalid or missing email
+ *       '409':
+ *         description: Conflict - email already registered
+ *       '500':
+ *         description: Internal server error
+ */
+router.post('/driver/verifyDriverEmail', [
+  check('email').isEmail().withMessage('Valid email is required'),
+], verifyEmail);
+/**
+ * @swagger
+ * /driverAuth/driver/verifyDriverOtp:
+ *   post:
+ *     summary: Verify OTP sent to driver's email
+ *     description: Confirms the OTP sent to the driver's email to verify identity before completing registration.
+ *     tags: [Driver]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *               - otp
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: elijayboy87@gmail.com
+ *               otp:
+ *                 type: string
+ *                 description: 6-digit one-time password sent to the email
+ *                 example: "483957"
+ *     responses:
+ *       '200':
+ *         description: OTP verified successfully
+ *         content:
+ *           application/json:
+ *             example:
+ *               status: success
+ *               message: Email verified successfully. Proceed to complete registration.
+ *               data:
+ *                 driverId: 689758c6e5a596b9d2380e3c
+ *                 email: elijayboy87@gmail.com
+ *       '400':
+ *         description: Invalid or expired OTP
+ *       '404':
+ *         description: Email not found
+ *       '500':
+ *         description: Internal server error
+ */
+router.post('/driver/verifyDriverOtp', [
+  check('email').isEmail().withMessage('Valid email is required'),
+  check('otp').isNumeric().withMessage('Valid OTP is required'),
+], verifyDriverOtp);
+
 module.exports = router;
