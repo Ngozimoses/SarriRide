@@ -195,7 +195,7 @@ driverSchema.pre('save', async function (next) {
 });
 
 // Create indexes for performance
-driverSchema.index({ email: 1 }, { unique: true, sparse: true });
+// driverSchema.index({ email: 1 }, { unique: true, sparse: true });
 driverSchema.index({ phoneNumber: 1 }, { unique: true, sparse: true });
 driverSchema.index({ licenseNumber: 1 }, { unique: true, sparse: true });
 driverSchema.index({ 'vehicleDetails.licensePlate': 1 }, { unique: true, sparse: true });
