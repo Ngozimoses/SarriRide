@@ -4,7 +4,6 @@ const { rateLimit } = require('express-rate-limit');
 const { body, check } = require('express-validator');
 const {authMiddleware} = require('../middlewares/auth.js');
 const {DriverLogin} = require('../Controllers/Driver.controller.js');
-const { loginValidation } = require('../middlewares/Validation');
 const router = express.Router();
 const {
   registrationValidation,
