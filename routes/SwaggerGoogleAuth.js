@@ -2,7 +2,7 @@ const express = require('express');
 const passport = require('passport');
 const { rateLimit } = require('express-rate-limit');
 const { body, check } = require('express-validator');
-
+const {verifyEmail, verifyDriverOtp, registerDriver, uploadImages} = require('../Controllers/Driver.controller.js');
 const {DriverLogin} = require('../Controllers/Driver.controller.js');
 const router = express.Router();
 const {
