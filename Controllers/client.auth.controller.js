@@ -6,6 +6,7 @@ const crypto = require('crypto');
 const sanitizeHtml = require('sanitize-html');
 const winston = require('winston');
 const Client = require('../models/Client');
+const Driver = require ('../models/Driver');
 const RefreshToken = require('../models/RefreshToken');
 const redis = require('../Config/redis');
 const { encrypt, decrypt } = require('../utils/encryptDecrypt');
@@ -106,9 +107,17 @@ const ClientRegistration = async (req, res) => {
         ...(sanitizedFacebookId ? [{ facebookId: sanitizedFacebookId }] : []),
       ],
     }).lean();
+
+    const existingDriver = await Driver.findOne({ email: sanitizedEmail });
+
     if (existingClient) {
       logger.warn('Client already registered', { email: sanitizedEmail, googleId: sanitizedGoogleId, facebookId: sanitizedFacebookId });
       return res.status(400).json({ status: 'error', message: 'Email or third-party ID already registered' });
+    }
+
+    if (existingDriver) {
+      logger.warn('Driver already registered', { email: sanitizedEmail });
+      return res.status(400).json({ status: 'error', message: 'Email already registered as a driver' });
     }
 
     const newClient = new Client({
