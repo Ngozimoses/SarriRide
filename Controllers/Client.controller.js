@@ -90,6 +90,26 @@ const calculateRidePrice = async (req, res) => {
     return res.status(500).json({ status: 'error', message: 'An unexpected error occurred' });
   }
 };
+// middleware to support query parameters
+const mapQueryToBody = (req, res, next) => {
+  const { currentLat, currentLng, destLat, destLng } = req.query;
+
+  if (currentLat && currentLng && destLat && destLng) {
+    req.body = {
+      currentLocation: {
+        latitude: parseFloat(currentLat),
+        longitude: parseFloat(currentLng),
+      },
+      destination: {
+        latitude: parseFloat(destLat),
+        longitude: parseFloat(destLng),
+      },
+    };
+  }
+
+  next();
+};
+
 
 const endTrip = async (req, res) => {
   try {
@@ -179,4 +199,4 @@ const endTrip = async (req, res) => {
   }
 };
 
-module.exports = { calculateRidePrice, endTrip };
+module.exports = { calculateRidePrice, endTrip, mapQueryToBody };

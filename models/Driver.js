@@ -174,6 +174,10 @@ const driverSchema = new mongoose.Schema({
   },
   lockUntil: {
     type: Number
+  },
+  category: {
+    type: String,
+    enum: ['luxury', 'comfort', 'xl'],
   }
 });
 

@@ -1803,3 +1803,7 @@
 {"level":"info","message":"Redis client ready","timestamp":"2025-08-03T20:59:48.832Z"}
 {"level":"info","message":"MongoDB connected successfully","timestamp":"2025-08-03T20:59:50.275Z","uri":"mongodb+srv://Elijah:DJj7XZABA05EgCPA@cluster0.vwybv.mongodb.net/SarriRide?retryWrites=true&w=majority&appName=Cluster0"}
 {"level":"info","message":"Server running on port 3000","timestamp":"2025-08-03T20:59:50.284Z"}
+{"db":0,"host":"redis-17247.c279.us-central1-1.gce.redns.redis-cloud.com","level":"info","message":"Redis connected successfully","port":17247,"timestamp":"2025-08-20T03:02:36.390Z"}
+{"level":"info","message":"Redis client ready","timestamp":"2025-08-20T03:02:36.620Z"}
+{"level":"info","message":"MongoDB connected successfully","timestamp":"2025-08-20T03:02:38.157Z","uri":"mongodb+srv://Elijah:DJj7XZABA05EgCPA@cluster0.vwybv.mongodb.net/SarriRide?retryWrites=true&w=majority&appName=Cluster0"}
+{"level":"info","message":"Server running on port 3000","timestamp":"2025-08-20T03:02:38.163Z"}
