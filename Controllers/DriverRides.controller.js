@@ -64,7 +64,12 @@ const availableDriver = async (req,res)=>{
         //POST https://sarriride.onrender.com/clientRide/calculate-price?currentLat=51.5074&currentLng=-0.1278&destLat=48.8566&destLng=2.3522
 
          const clientUrl = `https://sarriride.onrender.com/clientRide/calculate-price?currentLat=${currentLocation.latitude}&currentLng=${currentLocation.longitude}&destLat=${destination.latitude}&destLng=${destination.longitude}`
-          const resFromClientUrl = axios.post(clientUrl)
+          const resFromClientUrl = axios.post(clientUrl,
+            {},
+            {
+              headers: { Authorization: `Bearer ${req.headers.authorization?.split(" ")[1]}` }
+            }
+          )
         const driverCategory = await Driver.findOne({ category });
         const bookingDetails = {}
         // Fetch pricing from MongoDB
