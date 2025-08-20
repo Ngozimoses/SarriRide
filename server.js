@@ -80,7 +80,7 @@ const connectMongoDB = async () => {
 // Routes
 app.use('/auth', authRoutes);// this is for client authentication
 app.use('/clientRide', ClientRideRoutes);
-app.use('/driverAuth', driverRoutes);
+app.use('/driverAuth', driverRoutes);// DRIVER AUTHENTICATION ROUTES
 app.use('/driverRides', DriverRidesRoutes); // this is for driver ride routes
 
 

@@ -33,7 +33,7 @@ const updateDriverLocation = async (req, res) => {
     const driver = await Driver.findById(driverId).select('lastLocationUpdate');
     if (driver && driver.lastLocationUpdate) {
       const timeSinceLastUpdate = (new Date() - driver.lastLocationUpdate) / 1000;
-      if (timeSinceLastUpdate < MIN_UPDATE_INTERVAL_SECONDS) {
+      if (timeSinceLastUpdate > MIN_UPDATE_INTERVAL_SECONDS) {
         logger.warn('Location update too frequent', { driverId, timeSinceLastUpdate });
         return res.status(429).json({ status: 'error', message: 'Location update too frequent, please wait' });
       }
