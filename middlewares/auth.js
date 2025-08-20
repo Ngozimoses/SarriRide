@@ -1,3 +1,198 @@
+// const jwt = require('jsonwebtoken');
+// const winston = require('winston');
+// const { validationResult } = require('express-validator');
+// const bcrypt = require('bcryptjs');
+// const crypto = require('crypto');
+// const { v4: uuidv4 } = require('uuid');
+// const Client = require('../models/Client');
+// const Driver = require('../models/Driver');
+// const Admin = require('../models/Admin');
+// const Rider = require('../models/Rider');
+// const redis = require('../Config/redis');
+// const { decrypt } = require('../utils/encryptDecrypt');
+// const sendEmail = require('../utils/sendMail');
+
+// const logger = winston.createLogger({
+//   level: 'info',
+//   format: winston.format.combine(
+//     winston.format.timestamp(),
+//     winston.format.json()
+//   ),
+//   transports: [
+//     new winston.transports.Console(),
+//     new winston.transports.File({ filename: 'logs/error.log', level: 'error' }),
+//     new winston.transports.File({ filename: 'logs/combined.log' })
+//   ]
+// });
+
+// const CONFIG = {
+//   ALLOWED_ROLES: ['client', 'driver', 'admin', 'rider'],
+//   JWT_ACCESS_TOKEN_EXPIRY: '15m',
+//   OTP_EXPIRY_MS: 3600000,
+//   RESET_TOKEN_EXPIRY_MS: 15 * 60 * 1000,
+//    REDIS_KEY_PREFIX: 'auth:', 
+// };
+
+// const validateEnv = () => {
+//   if (!process.env.JWT_SECRET) {
+//     logger.error('JWT_SECRET is not set');
+//     throw new Error('JWT_SECRET is required');
+//   }
+//   if (!process.env.ENCRYPTION_KEY) {
+//     logger.error('COOKIE_ENCRYPTION_KEY is not set');
+//     throw new Error('COOKIE_ENCRYPTION_KEY is required');
+//   }
+//   if (!process.env.BACKEND_URL) {
+//     logger.error('BACKEND_URL is not set');
+//     throw new Error('BACKEND_URL is required');
+//   }
+// };
+
+// const modelMap = {
+//   client: Client,
+//   driver: Driver,
+//   admin: Admin,
+//   rider: Rider,
+// };
+
+// const authMiddleware = (requiredRole = null) => {
+//   return async (req, res, next) => {
+//     try {
+//       const authHeader = req.headers['authorization'];
+//       if (!authHeader || !authHeader.startsWith('Bearer ')) {
+//         logger.warn('No valid Authorization header provided');
+//         return res.status(401).json({ status: 'error', message: 'Unauthorized - No token provided' });
+//       }
+
+//       const token = authHeader.split(' ')[1];
+//       if (!token) {
+//         logger.warn('Token missing in Authorization header');
+//         return res.status(401).json({ status: 'error', message: 'Unauthorized - No token provided' });
+//       }
+
+//       let decryptedToken;
+//       try {
+//         decryptedToken = decrypt(token);
+//       } catch (error) {
+//         logger.warn('Failed to decrypt token', { error: error.message });
+//         return res.status(401).json({ status: 'error', message: 'Unauthorized - Invalid token format' });
+//       }
+
+//       const isBlacklisted = await redis.get(`blacklist:${decryptedToken}`);
+//       if (isBlacklisted) {
+//         logger.warn('Blacklisted token used');
+//         return res.status(401).json({ status: 'error', message: 'Unauthorized - Token revoked' });
+//       }
+
+//       const decoded = jwt.verify(decryptedToken, process.env.JWT_SECRET);
+//       logger.debug('Token decoded', {
+//         userId: decoded.id,
+//         role: decoded.role,
+//         isAdminSession: decoded.isAdminSession,
+//         expiry: new Date(decoded.exp * 1000),
+//       });
+
+//       const Model = modelMap[decoded.role];
+//       if (!Model) {
+//         logger.warn('Invalid role in token', { role: decoded.role });
+//         return res.status(401).json({ status: 'error', message: 'Unauthorized - Invalid role' });
+//       }
+
+//       let user;
+//       const cacheKey = `user:${decoded.id}:${decoded.role}`;
+//       const cachedUser = await redis.get(cacheKey);
+//       if (cachedUser) {
+//         user = JSON.parse(cachedUser);
+//       } else {
+//         const selectFields = decoded.role === 'driver'
+//           ? '_id email FirstName LastName role picture isVerified adminVerified'
+//           : '_id email FirstName LastName role picture isVerified';
+//         user = await Model.findById(decoded.id).select(selectFields).lean();
+//         if (user) {
+//           await redis.set(cacheKey, JSON.stringify(user), 'EX', 3600); // Cache for 1 hour
+//         }
+//       }
+
+//       if (!user) {
+//         logger.warn('User not found for token', { userId: decoded.id, role: decoded.role });
+//         return res.status(401).json({ status: 'error', message: 'Unauthorized - User not found' });
+//       }
+
+//       if (user.role !== decoded.role) {
+//         logger.warn('Token role mismatch', { userId: user._id, tokenRole: decoded.role, userRole: user.role });
+//         return res.status(401).json({ status: 'error', message: 'Unauthorized - Invalid token role' });
+//       }
+
+//       if (!CONFIG.ALLOWED_ROLES.includes(user.role)) {
+//         logger.warn('Invalid user role', { userId: user._id, role: user.role });
+//         return res.status(403).json({ status: 'error', message: `Forbidden - Valid role (${CONFIG.ALLOWED_ROLES.join(', ')}) required` });
+//       }
+
+//       // if (user.role === 'driver' && !user.adminVerified && process.env.NODE_ENV !== 'test') {
+//       //   logger.warn('Driver not approved by admin', { userId: user._id });
+//       //   return res.status(403).json({ status: 'error', message: 'Forbidden - Account awaiting admin approval' });
+//       // }
+
+//       const isAdminSession = decoded.isAdminSession || false;
+//       if (requiredRole === 'admin' && (!isAdminSession || user.role !== 'admin')) {
+//         logger.warn('Admin session or role required for admin route', { userId: user._id, role: user.role });
+//         return res.status(403).json({ status: 'error', message: 'Forbidden - Admin role and session required' });
+//       }
+
+//       req.user = {
+//         _id: user._id,
+//         email: user.email,
+//         name: user.name || `${user.FirstName} ${user.LastName}`.trim(),
+//         picture: user.picture,
+//         role: user.role,
+//         isVerified: user.isVerified,
+//         isAdminSession,
+//         ...(user.role === 'driver' && { adminVerified: user.adminVerified }),
+//       };
+
+//       if (user.role === 'client') {
+//         const client = await Client.findOne({ userId: user._id }).lean();
+//         req.user.client = client || null;
+//         logger.info('Client profile attached to request', { userId: user._id, clientId: client ? client._id : null });
+//       }
+
+//       if (requiredRole) {
+//         const requiredRoles = Array.isArray(requiredRole) ? requiredRole : [requiredRole];
+//         if (!requiredRoles.every(role => CONFIG.ALLOWED_ROLES.includes(role))) {
+//           logger.warn('Invalid required role specified', { requiredRoles });
+//           return res.status(500).json({ status: 'error', message: 'Server configuration error - Invalid required role' });
+//         }
+//         if (!requiredRoles.includes(req.user.role)) {
+//           logger.warn('Role access denied', {
+//             userId: user._id,
+//             userRole: req.user.role,
+//             requiredRoles,
+//           });
+//           return res.status(403).json({
+//             status: 'error',
+//             message: `Forbidden - ${requiredRoles.join(' or ')} role required`,
+//           });
+//         }
+//       }
+
+//       next();
+//     } catch (error) {
+//       let statusCode = 401;
+//       let response = { status: 'error', message: 'Unauthorized - Invalid token' };
+
+//       if (error.name === 'TokenExpiredError') {
+//         response.message = 'Session expired - Please log in again';
+//       } else if (error.name === 'JsonWebTokenError') {
+//         response.message = 'Unauthorized - Invalid token';
+//       }
+
+//       logger.warn('Authentication error', { error: error.message, tokenSource: 'Authorization header' });
+//       return res.status(statusCode).json(response);
+//     }
+//   };
+// };
+
+
 const jwt = require('jsonwebtoken');
 const winston = require('winston');
 const { validationResult } = require('express-validator');
@@ -30,7 +225,7 @@ const CONFIG = {
   JWT_ACCESS_TOKEN_EXPIRY: '15m',
   OTP_EXPIRY_MS: 3600000,
   RESET_TOKEN_EXPIRY_MS: 15 * 60 * 1000,
-   REDIS_KEY_PREFIX: 'auth:', 
+  REDIS_KEY_PREFIX: 'auth:', 
 };
 
 const validateEnv = () => {
@@ -191,6 +386,128 @@ const authMiddleware = (requiredRole = null) => {
     }
   };
 };
+
+// ADDED FOR SOCKET.IO
+const authMiddlewareSocket = (requiredRole = null) => {
+  return async (socket, next) => {
+    try {
+      const token = socket.handshake.auth.token;
+      if (!token) {
+        logger.warn('No token provided for Socket.IO', { role: requiredRole });
+        return next(new Error('Unauthorized - No token provided'));
+      }
+
+      let decryptedToken;
+      try {
+        decryptedToken = decrypt(token);
+      } catch (error) {
+        logger.warn('Failed to decrypt Socket.IO token', { error: error.message });
+        return next(new Error('Unauthorized - Invalid token format'));
+      }
+
+      const isBlacklisted = await redis.get(`blacklist:${decryptedToken}`);
+      if (isBlacklisted) {
+        logger.warn('Blacklisted Socket.IO token used');
+        return next(new Error('Unauthorized - Token revoked'));
+      }
+
+      const decoded = jwt.verify(decryptedToken, process.env.JWT_SECRET);
+      logger.debug('Socket.IO token decoded', {
+        userId: decoded.id,
+        role: decoded.role,
+        isAdminSession: decoded.isAdminSession,
+      });
+
+      const Model = modelMap[decoded.role];
+      if (!Model) {
+        logger.warn('Invalid role in Socket.IO token', { role: decoded.role });
+        return next(new Error('Unauthorized - Invalid role'));
+      }
+
+      let user;
+      const cacheKey = `user:${decoded.id}:${decoded.role}`;
+      const cachedUser = await redis.get(cacheKey);
+      if (cachedUser) {
+        user = JSON.parse(cachedUser);
+      } else {
+        const selectFields = decoded.role === 'driver'
+          ? '_id email FirstName LastName role picture isVerified adminVerified'
+          : '_id email FirstName LastName role picture isVerified';
+        user = await Model.findById(decoded.id).select(selectFields).lean();
+        if (user) {
+          await redis.set(cacheKey, JSON.stringify(user), 'EX', 3600); // Cache for 1 hour
+        }
+      }
+
+      if (!user) {
+        logger.warn('User not found for Socket.IO token', { userId: decoded.id, role: decoded.role });
+        return next(new Error('Unauthorized - User not found'));
+      }
+
+      if (user.role !== decoded.role) {
+        logger.warn('Socket.IO token role mismatch', { userId: user._id, tokenRole: decoded.role, userRole: user.role });
+        return next(new Error('Unauthorized - Invalid token role'));
+      }
+
+      if (!CONFIG.ALLOWED_ROLES.includes(user.role)) {
+        logger.warn('Invalid user role for Socket.IO', { userId: user._id, role: user.role });
+        return next(new Error(`Forbidden - Valid role (${CONFIG.ALLOWED_ROLES.join(', ')}) required`));
+      }
+
+      // if (user.role === 'driver' && !user.adminVerified && process.env.NODE_ENV !== 'test') {
+      //   logger.warn('Driver not approved by admin for Socket.IO', { userId: user._id });
+      //   return next(new Error('Forbidden - Account awaiting admin approval'));
+      // }
+
+      const isAdminSession = decoded.isAdminSession || false;
+      if (requiredRole === 'admin' && (!isAdminSession || user.role !== 'admin')) {
+        logger.warn('Admin session or role required for Socket.IO', { userId: user._id, role: user.role });
+        return next(new Error('Forbidden - Admin role and session required'));
+      }
+
+      socket.user = {
+        _id: user._id,
+        email: user.email,
+        name: user.name || `${user.FirstName} ${user.LastName}`.trim(),
+        picture: user.picture,
+        role: user.role,
+        isVerified: user.isVerified,
+        isAdminSession,
+        ...(user.role === 'driver' && { adminVerified: user.adminVerified }),
+      };
+
+      if (requiredRole) {
+        const requiredRoles = Array.isArray(requiredRole) ? requiredRole : [requiredRole];
+        if (!requiredRoles.every(role => CONFIG.ALLOWED_ROLES.includes(role))) {
+          logger.warn('Invalid required role specified for Socket.IO', { requiredRoles });
+          return next(new Error('Server configuration error - Invalid required role'));
+        }
+        if (!requiredRoles.includes(socket.user.role)) {
+          logger.warn('Socket.IO role access denied', {
+            userId: user._id,
+            userRole: socket.user.role,
+            requiredRoles,
+          });
+          return next(new Error(`Forbidden - ${requiredRoles.join(' or ')} role required`));
+        }
+      }
+
+      next();
+    } catch (error) {
+      let message = 'Unauthorized - Invalid token';
+      if (error.name === 'TokenExpiredError') {
+        message = 'Session expired - Please log in again';
+      } else if (error.name === 'JsonWebTokenError') {
+        message = 'Unauthorized - Invalid token';
+      }
+
+      logger.warn('Socket.IO authentication error', { error: error.message, tokenSource: 'Socket.IO handshake' });
+      return next(new Error(message));
+    }
+  };
+};
+
+
 const ForgotPassword = async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -373,4 +690,4 @@ const VerifyOtp = async (req, res) => {
 
 validateEnv();
 
-module.exports = { authMiddleware, ForgotPassword, UpdatePassword, VerifyOtp };
+module.exports = { authMiddleware, ForgotPassword, UpdatePassword, VerifyOtp , authMiddlewareSocket };
