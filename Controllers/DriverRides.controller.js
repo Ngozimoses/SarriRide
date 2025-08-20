@@ -70,7 +70,7 @@ const availableDriver = async (req,res)=>{
               headers: { Authorization: `Bearer ${req.headers.authorization?.split(" ")[1]}` }
             }
           )
-        const driverCategory = await Driver.findOne({ category });
+        const driverCategory = await Driver.findOne({ });
         const bookingDetails = {}
         // Fetch pricing from MongoDB
         const pricing = await Pricing.find({ category: driverCategory?.category });
