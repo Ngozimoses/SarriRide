@@ -87,7 +87,7 @@ const checkAvailableDrivers = async (req, res) => {
       categoryDetails[category] = {
         ...prices[category],
         availableDriversCount: availableByCategory[category]?.count || 0,
-        availableDrivers: availableByCategory[category]?.drivers || [] // Include driver details
+        availableDrivers: availableByCategory[category]?.drivers || "No available drivers for this destination" // Include driver details
       };
     });
 

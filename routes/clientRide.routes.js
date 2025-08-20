@@ -5,7 +5,7 @@ const router = express.Router();
 const { authMiddleware } = require('../middlewares/auth');
 const { calculateRidePrice, mapQueryToBody } = require('../Controllers/Client.controller');
 const { checkAvailableDrivers } = require('../Controllers/DriverRides.controller');
-const { updateDriverLocation } = require('../Controllers/UpdateLocation.controller');
+
 
 const Limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
