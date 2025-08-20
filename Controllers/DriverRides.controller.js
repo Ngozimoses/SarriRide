@@ -88,7 +88,7 @@ const availableDriver = async (req,res)=>{
         res.json({
           status:"success",
           data:{
-            resFromClientUrl,
+           resFromClientUrl: resFromClientUrl.data,
             bookingDetails
           }
         })
