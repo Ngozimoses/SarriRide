@@ -65,7 +65,6 @@ const availableDriver = async (req,res)=>{
 
          const clientUrl = `https://sarriride.onrender.com/clientRide/calculate-price?currentLat=${currentLocation.latitude}&currentLng=${currentLocation.longitude}&destLat=${destination.latitude}&destLng=${destination.longitude}`
           const resFromClientUrl = axios.post(clientUrl,
-            {},
             {
               headers: { Authorization: `Bearer ${req.headers.authorization?.split(" ")[1]}` }
             }
