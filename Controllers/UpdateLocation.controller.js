@@ -158,7 +158,7 @@ const handleSocketUpdateLocation = async (socket, data, callback) => {
   }
 };
 
-// ADDED FOR SOCKET.IO
+// ADDED FOR SOCKET.IO FOR LIVE UPDATE IMPLEMENTATION
 const setupSocketIO = (io) => {
   io.on('connection', (socket) => {
     logger.info('Driver connected (Socket.IO)', { driverId: socket.user._id });

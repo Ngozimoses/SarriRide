@@ -20,7 +20,7 @@ const { authMiddlewareSocket } = require('./middlewares/auth');
 
 // Initialize Express app
 const app = express();
-// ADDED FOR SOCKET.IO
+// ADDED FOR SOCKET.IO FOR LIVE UPDATE IMPLEMENTATION
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
