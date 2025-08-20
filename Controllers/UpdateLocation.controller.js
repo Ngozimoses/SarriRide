@@ -160,18 +160,35 @@ const handleSocketUpdateLocation = async (socket, data, callback) => {
 
 // ADDED FOR SOCKET.IO FOR LIVE UPDATE IMPLEMENTATION
 const setupSocketIO = (io) => {
-  io.on('connection', (socket) => {
-    logger.info('Driver connected (Socket.IO)', { driverId: socket.user._id });
+  // Create a namespace for drivers
+  const driverNamespace = io.of('/drivers');
+
+  driverNamespace.on('connection', (socket) => {
+    logger.info('Driver connected (Socket.IO)', { driverId: socket.user?._id });
 
     socket.on('updateLocation', (data, callback) => {
       handleSocketUpdateLocation(socket, data, callback);
     });
 
     socket.on('disconnect', () => {
-      logger.info('Driver disconnected (Socket.IO)', { driverId: socket.user._id });
+      logger.info('Driver disconnected (Socket.IO)', { driverId: socket.user?._id });
     });
   });
 };
+
+// const setupSocketIO = (io) => {
+//   io.on('connection', (socket) => {
+//     logger.info('Driver connected (Socket.IO)', { driverId: socket.user._id });
+
+//     socket.on('updateLocation', (data, callback) => {
+//       handleSocketUpdateLocation(socket, data, callback);
+//     });
+
+//     socket.on('disconnect', () => {
+//       logger.info('Driver disconnected (Socket.IO)', { driverId: socket.user._id });
+//     });
+//   });
+// };
 
 module.exports = { updateDriverLocation, setupSocketIO };
 
