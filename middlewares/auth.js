@@ -391,7 +391,8 @@ const authMiddleware = (requiredRole = null) => {
 const authMiddlewareSocket = (requiredRole = null) => {
   return async (socket, next) => {
     try {
-      const token = socket.handshake.auth.token;
+      // const token = socket.handshake.auth.token;
+       const token = socket.handshake.auth.token || socket.handshake.query.token;
       if (!token) {
         logger.warn('No token provided for Socket.IO', { role: requiredRole });
         return next(new Error('Unauthorized - No token provided'));
