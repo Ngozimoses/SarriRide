@@ -1,9 +1,8 @@
-const { validationResult } = require('express-validator');
-const axios = require('axios');
-const redis = require('../Config/redis');
-const Driver = require('../models/Driver')
-const Pricing = require ('../models/PricingSchema.js')
 
+const { validationResult } = require('express-validator');
+const Driver = require('../models/Driver');
+const { getDistanceKm, calculatePrices } = require('../utils/rideUtils');
+const redis = require('../Config/redis');
 const winston = require('winston');
 
 const logger = winston.createLogger({
@@ -19,85 +18,89 @@ const logger = winston.createLogger({
   ]
 });
 
-const availableDriver = async (req,res)=>{
-  try{
+const MAX_SEARCH_RADIUS_METERS = 10000; // 10km radius for nearby drivers
+const AVAILABILITY_CACHE_TTL_SECONDS = 30; // Cache driver counts for 30 seconds
+
+const checkAvailableDrivers = async (req, res) => {
+  try {
     const errors = validationResult(req);
-        if (!errors.isEmpty()) {
-          logger.warn('Validation failed for ride price calculation', { errors: errors.array() });
-          return res.status(400).json({ status: 'error', message: 'Invalid request', data: { errors: errors.array() } });
-        }
+    if (!errors.isEmpty()) {
+      logger.warn('Validation failed for available drivers check', { errors: errors.array(), userId: req.user?._id });
+      return res.status(400).json({ status: 'error', message: 'Invalid request', data: { errors: errors.array() } });
+    }
 
-        const { currentLocation, destination } = req.body;
-        if (!currentLocation || !destination || 
-            typeof currentLocation.latitude !== 'number' || 
-            typeof currentLocation.longitude !== 'number' || 
-            typeof destination.latitude !== 'number' || 
-            typeof destination.longitude !== 'number') {
-          logger.warn('Invalid coordinates provided', { currentLocation, destination });
-          return res.status(400).json({ status: 'error', message: 'Valid latitude and longitude required' });
-        }
+    const { currentLocation, destination } = req.body;
+    if (!currentLocation || !destination ||
+        typeof currentLocation.latitude !== 'number' ||
+        typeof currentLocation.longitude !== 'number' ||
+        typeof destination.latitude !== 'number' ||
+        typeof destination.longitude !== 'number') {
+      logger.warn('Invalid coordinates provided', { currentLocation, destination, userId: req.user?._id });
+      return res.status(400).json({ status: 'error', message: 'Valid latitude and longitude required' });
+    }
 
-         const origin = `${currentLocation.latitude},${currentLocation.longitude}`;
-    const dest = `${destination.latitude},${destination.longitude}`;
-    const apiKey = process.env.GOOGLE_MAPS_API_KEY;
-    const cacheKey = `distance:${origin}:${dest}`;
-
-      let distanceKm;
+    const userId = req.user?._id?.toString() || 'anonymous';
+    const cacheKey = `drivers:near:${currentLocation.latitude}:${currentLocation.longitude}`;
     
-        const cachedDistance = await redis.get(cacheKey);
-        if (cachedDistance) {
-          distanceKm = parseFloat(cachedDistance);
-        } else {
-          const url = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${origin}&destinations=${dest}&key=${apiKey}`;
-          const response = await axios.get(url);
-          const distanceMeters = response.data.rows[0].elements[0].distance?.value;
-          if (!distanceMeters) {
-            logger.warn('Failed to get distance from Google Maps', { origin, dest });
-            return res.status(500).json({ status: 'error', message: 'Failed to calculate distance' });
+    // Check Redis cache for driver availability
+    let availableByCategory = await redis.get(cacheKey);
+    if (availableByCategory) {
+      availableByCategory = JSON.parse(availableByCategory);
+      logger.info('Driver availability retrieved from cache', { cacheKey, userId });
+    } else {
+      // Geospatial query to find nearby available drivers
+      const availableDriversAgg = await Driver.aggregate([
+        {
+          $geoNear: {
+            near: { type: 'Point', coordinates: [currentLocation.longitude, currentLocation.latitude] },
+            distanceField: 'dist.calculated',
+            maxDistance: MAX_SEARCH_RADIUS_METERS,
+            query: { availabilityStatus: 'available', adminVerified: true }, // Only verified, available drivers
+            spherical: true
           }
-          distanceKm = distanceMeters / 1000;
-        await redis.set(cacheKey, distanceKm.toString(), 'EX', 3600);
-
-        }
-
-        // checking if the Users Location Matches the driver Location 
-        //POST https://sarriride.onrender.com/clientRide/calculate-price?currentLat=51.5074&currentLng=-0.1278&destLat=48.8566&destLng=2.3522
-
-         const clientUrl = `https://sarriride.onrender.com/clientRide/calculate-price?currentLat=${currentLocation.latitude}&currentLng=${currentLocation.longitude}&destLat=${destination.latitude}&destLng=${destination.longitude}`
-          const resFromClientUrl = await axios.post(clientUrl,
-            {},
-            {
-              headers: { Authorization: `Bearer ${req.headers.authorization?.split(" ")[1]}` }
-            }
-          )
-        const driverCategory = await Driver.findOne({ });
-        const bookingDetails = {}
-        // Fetch pricing from MongoDB
-        const pricing = await Pricing.find({ category: driverCategory?.category });
-        pricing.forEach(({ category, baseFee, perKm, minimumFare, seats }) => {
-          const price = Math.max(baseFee + perKm * distanceKm, minimumFare);
-          bookingDetails[category] = {
-            price: Math.round(price * 100) / 100,
-            seats
-          };
-        });
-        if (pricing.length === 0) {
-          logger.error('No pricing data found in database');
-          return res.status(500).json({ status: 'error', message: 'Pricing data not configured' });
-        }
-        res.json({
-          status:"success",
-          data:{
-           resFromClientUrl: resFromClientUrl.data,
-            bookingDetails
+        },
+        {
+          $group: {
+            _id: '$category',
+            drivers: { $push: { _id: '$_id', name: { $concat: ['$FirstName', ' ', '$LastName'] }, location: '$location' } },
+            count: { $sum: 1 }
           }
-        })
-        // res.json({ status: 'success', data: drivers });
+        }
+      ]);
 
-  }catch(err){
-  logger.error(`Error occurred while fetching available drivers: ${err.message}`);
-  res.status(500).json({ error: 'Internal Server Error' }); 
-}
-}
+      availableByCategory = availableDriversAgg.reduce((acc, item) => {
+        acc[item._id] = { count: item.count, drivers: item.drivers };
+        return acc;
+      }, {});
 
-module.exports= {availableDriver}
+      // Cache for 30 seconds
+      await redis.set(cacheKey, JSON.stringify(availableByCategory), 'EX', AVAILABILITY_CACHE_TTL_SECONDS);
+      logger.info('Driver availability cached', { cacheKey, availableByCategory, userId });
+    }
+
+    const distanceKm = await getDistanceKm(currentLocation, destination, userId);
+    const prices = await calculatePrices(distanceKm, userId);
+
+    // Combine prices with availability
+    const categoryDetails = {};
+    Object.keys(prices).forEach(category => {
+      categoryDetails[category] = {
+        ...prices[category],
+        availableDriversCount: availableByCategory[category]?.count || 0,
+        availableDrivers: availableByCategory[category]?.drivers || [] // Include driver details
+      };
+    });
+
+    logger.info('Available drivers checked successfully', { distanceKm, categoryDetails, userId });
+    return res.status(200).json({
+      status: 'success',
+      message: 'Available drivers and pricing details retrieved',
+      data: { distanceKm, categoryDetails }
+    });
+  } catch (error) {
+    logger.error('Error checking available drivers', { error: error.message, userId: req.user?._id });
+    return res.status(500).json({ status: 'error', message: error.message || 'An unexpected error occurred' });
+  }
+};
+
+module.exports = { checkAvailableDrivers };

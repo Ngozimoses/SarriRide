@@ -1,3 +1,4 @@
+//THIS FILE IS FOR DRIVER AUTH CONTROLLER
 const { check, validationResult } = require('express-validator');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');

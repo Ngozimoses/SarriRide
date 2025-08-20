@@ -7,8 +7,9 @@ const cors = require('cors');
 const winston = require('winston');
 const redis = require('./Config/redis'); 
 const authRoutes = require('./routes/authRoutes'); 
-const ClientRideRoutes = require('./routes/clientRide.routes'); // Assuming this is the correct path
-const driverRoutes = require ('./routes/auth.Driver.routes'); // Assuming this is the correct path
+const ClientRideRoutes = require('./routes/clientRide.routes');
+const driverRoutes = require ('./routes/auth.Driver.routes'); 
+const DriverRidesRoutes = require('./routes/DriverRides.routes')
 const path = require('path');
 
 // Initialize Express app
@@ -77,13 +78,14 @@ const connectMongoDB = async () => {
 };
 
 // Routes
-app.use('/auth', authRoutes);
+app.use('/auth', authRoutes);// this is for client authentication
 app.use('/clientRide', ClientRideRoutes);
 app.use('/driverAuth', driverRoutes);
+app.use('/driverRides', DriverRidesRoutes); // this is for driver ride routes
 
 
-const swaggerAuthRoutes = require('./routes/SwaggerGoogleAuth'); // Import Google OAuth routes
-app.use('/', swaggerAuthRoutes); // Mounts Google OAuth routes
+const swaggerAuthRoutes = require('./routes/SwaggerGoogleAuth'); // swagger documentation
+app.use('/', swaggerAuthRoutes); 
 
 // Health check endpoint
 app.get('/health', async (req, res) => {
