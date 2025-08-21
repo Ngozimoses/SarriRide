@@ -288,7 +288,7 @@ const setupSocketIO = (io, socket) => {
   });
 };
 
-module.exports = { handleSocketUpdateLocation, setupSocketIO };
+module.exports = { handleSocketUpdateLocation, setupSocketIO,   updateDriverLocation };
 
 
 
