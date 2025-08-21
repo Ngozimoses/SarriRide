@@ -86,97 +86,97 @@ const updateDriverLocation = async (req, res) => {
 };
 
 // ADDED FOR SOCKET.IO FOR LIVE UPDATE IMPLEMENTATION 
-const handleSocketUpdateLocation = async (socket, data, callback) => {
-  try {
-    // Validate input
-    await Promise.all([
-      check('latitude').isFloat({ min: -90, max: 90 }).withMessage('Valid latitude (-90 to 90) required').run({ body: data }),
-      check('longitude').isFloat({ min: -180, max: 180 }).withMessage('Valid longitude (-180 to 180) required').run({ body: data }),
-      check('availabilityStatus')
-        .optional()
-        .isIn(['available', 'unavailable', 'on_trip'])
-        .withMessage('Invalid availability status')
-        .run({ body: data })
-    ]);
+// const handleSocketUpdateLocation = async (socket, data, callback) => {
+//   try {
+//     // Validate input
+//     await Promise.all([
+//       check('latitude').isFloat({ min: -90, max: 90 }).withMessage('Valid latitude (-90 to 90) required').run({ body: data }),
+//       check('longitude').isFloat({ min: -180, max: 180 }).withMessage('Valid longitude (-180 to 180) required').run({ body: data }),
+//       check('availabilityStatus')
+//         .optional()
+//         .isIn(['available', 'unavailable', 'on_trip'])
+//         .withMessage('Invalid availability status')
+//         .run({ body: data })
+//     ]);
 
-    const errors = validationResult({ body: data });
-    if (!errors.isEmpty()) {
-      logger.warn('Validation failed for driver location update (Socket.IO)', { errors: errors.array(), driverId: socket.user._id });
-      return callback({ status: 'error', message: 'Invalid request', data: { errors: errors.array() } });
-    }
+//     const errors = validationResult({ body: data });
+//     if (!errors.isEmpty()) {
+//       logger.warn('Validation failed for driver location update (Socket.IO)', { errors: errors.array(), driverId: socket.user._id });
+//       return callback({ status: 'error', message: 'Invalid request', data: { errors: errors.array() } });
+//     }
 
-    const { latitude, longitude, availabilityStatus } = data;
-    const driverId = socket.user._id;
+//     const { latitude, longitude, availabilityStatus } = data;
+//     const driverId = socket.user._id;
 
-    // Check if update is too frequent
-    const driver = await Driver.findById(driverId).select('lastLocationUpdate');
-    if (driver && driver.lastLocationUpdate) {
-      const timeSinceLastUpdate = (new Date() - driver.lastLocationUpdate) / 1000;
-      if (timeSinceLastUpdate <  MIN_UPDATE_INTERVAL_SECONDS) {
-        logger.warn('Location update too frequent (Socket.IO)', { driverId, timeSinceLastUpdate });
-        return callback({ status: 'error', message: 'Location update too frequent, please wait' });
-      }
-    }
+//     // Check if update is too frequent
+//     const driver = await Driver.findById(driverId).select('lastLocationUpdate');
+//     if (driver && driver.lastLocationUpdate) {
+//       const timeSinceLastUpdate = (new Date() - driver.lastLocationUpdate) / 1000;
+//       if (timeSinceLastUpdate <  MIN_UPDATE_INTERVAL_SECONDS) {
+//         logger.warn('Location update too frequent (Socket.IO)', { driverId, timeSinceLastUpdate });
+//         return callback({ status: 'error', message: 'Location update too frequent, please wait' });
+//       }
+//     }
 
-    // Update location and status
-    const updateFields = {
-      location: {
-        type: 'Point',
-        coordinates: [longitude, latitude]
-      },
-      lastLocationUpdate: new Date()
-    };
+//     // Update location and status
+//     const updateFields = {
+//       location: {
+//         type: 'Point',
+//         coordinates: [longitude, latitude]
+//       },
+//       lastLocationUpdate: new Date()
+//     };
   
 
 
-    if (availabilityStatus && ['available', 'unavailable', 'on_trip'].includes(availabilityStatus)) {
-      updateFields.availabilityStatus = availabilityStatus;
-    }
+//     if (availabilityStatus && ['available', 'unavailable', 'on_trip'].includes(availabilityStatus)) {
+//       updateFields.availabilityStatus = availabilityStatus;
+//     }
 
-    const updatedDriver = await Driver.findByIdAndUpdate(
-      driverId,
-      { $set: updateFields },
-      { new: true, select: 'location availabilityStatus lastLocationUpdate' }
-    );
+//     const updatedDriver = await Driver.findByIdAndUpdate(
+//       driverId,
+//       { $set: updateFields },
+//       { new: true, select: 'location availabilityStatus lastLocationUpdate' }
+//     );
 
-    if (!updatedDriver) {
-      logger.warn('Driver not found for location update (Socket.IO)', { driverId });
-      return callback({ status: 'error', message: 'Driver not found' });
-    }
+//     if (!updatedDriver) {
+//       logger.warn('Driver not found for location update (Socket.IO)', { driverId });
+//       return callback({ status: 'error', message: 'Driver not found' });
+//     }
 
-    logger.info('Driver location updated successfully (Socket.IO)', { driverId, latitude, longitude, availabilityStatus });
-    callback({
-      status: 'success',
-      message: 'Location updated successfully',
-      data: {
-        location: updatedDriver.location,
-        availabilityStatus: updatedDriver.availabilityStatus,
-        lastLocationUpdate: updatedDriver.lastLocationUpdate
-      }
-    });
-  } catch (error) {
-    logger.error('Error updating driver location (Socket.IO)', { error: error.message, driverId: socket.user._id });
-    callback({ status: 'error', message: 'An unexpected error occurred' });
-  }
-};
+//     logger.info('Driver location updated successfully (Socket.IO)', { driverId, latitude, longitude, availabilityStatus });
+//     callback({
+//       status: 'success',
+//       message: 'Location updated successfully',
+//       data: {
+//         location: updatedDriver.location,
+//         availabilityStatus: updatedDriver.availabilityStatus,
+//         lastLocationUpdate: updatedDriver.lastLocationUpdate
+//       }
+//     });
+//   } catch (error) {
+//     logger.error('Error updating driver location (Socket.IO)', { error: error.message, driverId: socket.user._id });
+//     callback({ status: 'error', message: 'An unexpected error occurred' });
+//   }
+// };
 
-// ADDED FOR SOCKET.IO FOR LIVE UPDATE IMPLEMENTATION
-const setupSocketIO = (io) => {
-  // Create a namespace for drivers
-  const driverNamespace = io.of('/drivers');
+// // ADDED FOR SOCKET.IO FOR LIVE UPDATE IMPLEMENTATION
+// const setupSocketIO = (io) => {
+//   // Create a namespace for drivers
+//   const driverNamespace = io.of('/drivers');
 
-  driverNamespace.on('connection', (socket) => {
-    logger.info('Driver connected (Socket.IO)', { driverId: socket.user?._id });
+//   driverNamespace.on('connection', (socket) => {
+//     logger.info('Driver connected (Socket.IO)', { driverId: socket.user?._id });
 
-    socket.on('updateLocation', (data, callback) => {
-      handleSocketUpdateLocation(socket, data, callback);
-    });
+//     socket.on('updateLocation', (data, callback) => {
+//       handleSocketUpdateLocation(socket, data, callback);
+//     });
 
-    socket.on('disconnect', () => {
-      logger.info('Driver disconnected (Socket.IO)', { driverId: socket.user?._id });
-    });
-  });
-};
+//     socket.on('disconnect', () => {
+//       logger.info('Driver disconnected (Socket.IO)', { driverId: socket.user?._id });
+//     });
+//   });
+// };
 
 // const setupSocketIO = (io) => {
 //   io.on('connection', (socket) => {
@@ -192,7 +192,104 @@ const setupSocketIO = (io) => {
 //   });
 // };
 
-module.exports = { updateDriverLocation, setupSocketIO };
+// module.exports = { updateDriverLocation, setupSocketIO };
+
+
+
+
+const handleSocketUpdateLocation = async (socket, data, callback) => {
+  try {
+    // Validate input manually
+    const errors = [];
+    if (typeof data.latitude !== 'number' || data.latitude < -90 || data.latitude > 90) {
+      errors.push({ msg: 'Valid latitude (-90 to 90) required', param: 'latitude', value: data.latitude });
+    }
+    if (typeof data.longitude !== 'number' || data.longitude < -180 || data.longitude > 180) {
+      errors.push({ msg: 'Valid longitude (-180 to 180) required', param: 'longitude', value: data.longitude });
+    }
+    if (data.availabilityStatus && !['available', 'unavailable', 'on_trip'].includes(data.availabilityStatus)) {
+      errors.push({ msg: 'Invalid availability status', param: 'availabilityStatus', value: data.availabilityStatus });
+    }
+
+    if (errors.length > 0) {
+      logger.warn('Validation failed for driver location update (Socket.IO)', { errors, driverId: socket.user?._id });
+      return callback({ status: 'error', message: 'Invalid request', data: { errors } });
+    }
+
+    const { latitude, longitude, availabilityStatus } = data;
+    const driverId = socket.user?._id;
+
+    if (!driverId) {
+      logger.warn('No driver ID found in socket (Socket.IO)', { socketId: socket.id });
+      return callback({ status: 'error', message: 'Unauthorized - No driver ID' });
+    }
+
+    // Check if update is too frequent
+    const driver = await Driver.findById(driverId).select('lastLocationUpdate');
+    if (driver && driver.lastLocationUpdate) {
+      const timeSinceLastUpdate = (new Date() - driver.lastLocationUpdate) / 1000;
+      if (timeSinceLastUpdate < MIN_UPDATE_INTERVAL_SECONDS) {
+        logger.warn('Location update too frequent (Socket.IO)', { driverId, timeSinceLastUpdate });
+        return callback({ status: 'error', message: 'Location update too frequent, please wait' });
+      }
+    }
+
+    // Update location and status
+    const updateFields = {
+      location: {
+        type: 'Point',
+        coordinates: [longitude, latitude]
+      },
+      lastLocationUpdate: new Date()
+    };
+
+    if (availabilityStatus) {
+      updateFields.availabilityStatus = availabilityStatus;
+    }
+
+    const updatedDriver = await Driver.findByIdAndUpdate(
+      driverId,
+      { $set: updateFields },
+      { new: true, select: 'location availabilityStatus lastLocationUpdate' }
+    );
+
+    if (!updatedDriver) {
+      logger.warn('Driver not found for location update (Socket.IO)', { driverId });
+      return callback({ status: 'error', message: 'Driver not found' });
+    }
+
+    logger.info('Driver location updated successfully (Socket.IO)', {
+      driverId,
+      location: updatedDriver.location,
+      availabilityStatus: updatedDriver.availabilityStatus,
+      lastLocationUpdate: updatedDriver.lastLocationUpdate
+    });
+
+    callback({
+      status: 'success',
+      message: 'Location updated successfully',
+      data: {
+        location: updatedDriver.location,
+        availabilityStatus: updatedDriver.availabilityStatus,
+        lastLocationUpdate: updatedDriver.lastLocationUpdate
+      }
+    });
+  } catch (error) {
+    logger.error('Error updating driver location (Socket.IO)', { error: error.message, driverId: socket.user?._id });
+    callback({ status: 'error', message: 'An unexpected error occurred' });
+  }
+};
+
+const setupSocketIO = (io, socket) => {
+  logger.info('Setting up Socket.IO handlers', { socketId: socket?.id });
+  socket.on('updateLocation', (data, callback) => {
+    logger.info('Received updateLocation event', { data, socketId: socket.id });
+    handleSocketUpdateLocation(socket, data, callback);
+  });
+};
+
+module.exports = { handleSocketUpdateLocation, setupSocketIO };
+
 
 
 // const { validationResult } = require('express-validator');
