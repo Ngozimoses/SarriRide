@@ -119,13 +119,19 @@ const handleSocketUpdateLocation = async (socket, data, callback) => {
     }
 
     // Update location and status
+    // const updateFields = {
+    //   location: {
+    //     type: 'Point',
+    //     coordinates: [longitude, latitude]
+    //   },
+    //   lastLocationUpdate: new Date()
+    // };
     const updateFields = {
-      location: {
-        type: 'Point',
-        coordinates: [longitude, latitude]
-      },
-      lastLocationUpdate: new Date()
-    };
+  'location.type': 'Point',
+  'location.coordinates': [longitude, latitude],
+  lastLocationUpdate: new Date()
+};
+
 
     if (availabilityStatus && ['available', 'unavailable', 'on_trip'].includes(availabilityStatus)) {
       updateFields.availabilityStatus = availabilityStatus;
