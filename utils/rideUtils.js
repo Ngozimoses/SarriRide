@@ -59,7 +59,7 @@ async function getDistanceKm(currentLocation, destination, userId) {
  * @returns {Promise<Object>} Prices object with category as key
  */
 async function calculatePrices(distanceKm, userId) {
-  const pricing = await Pricing.find({}).lean(); // Use lean for faster queries
+  const pricing = await Pricing.find({}).lean(); // Lean was used for faster queries
   if (pricing.length === 0) {
     logger.error('No pricing data found in database', { userId });
     throw new Error('Pricing data not configured');

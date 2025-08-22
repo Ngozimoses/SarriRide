@@ -8,7 +8,7 @@ const Limiter = rateLimit({
   message: { status: 'error', message: 'Too many requests, please try again later' },
 });
 const {authMiddleware} = require('../middlewares/auth.js');
-const { updateDriverLocation } = require('../Controllers/UpdateLocation.controller');
+const { updateDriverLocation , updateLocationHttp } = require('../Controllers/UpdateLocation.controller');
 
 router.put(
   '/update-location',
@@ -22,6 +22,7 @@ router.put(
       .isIn(['available', 'unavailable', 'on_trip'])
       .withMessage('Invalid availability status')
   ],
-  updateDriverLocation
+  updateLocationHttp,
+  // updateDriverLocation
 );
 module.exports = router;
