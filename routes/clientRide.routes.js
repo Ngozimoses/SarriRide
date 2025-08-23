@@ -42,8 +42,6 @@ router.post(
   checkAvailableDrivers
 );
 
-// Endpoint 3: Update Driver Location
-
 
 module.exports = router;
 

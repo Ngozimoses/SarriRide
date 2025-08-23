@@ -4,6 +4,7 @@ const { rateLimit } = require('express-rate-limit');
 const { body, check } = require('express-validator');
 const {verifyEmail, verifyDriverOtp, registerDriver, uploadImages} = require('../Controllers/Driver.controller.js');
 const {DriverLogin} = require('../Controllers/Driver.controller.js');
+const { calculateRidePrice, mapQueryToBody } = require('../Controllers/Client.controller');
 const router = express.Router();
 const {
   registrationValidation,
@@ -25,6 +26,7 @@ const {
   ClientLogout,
   ClientFacebookDataDeletion
 } = require('../Controllers/client.auth.controller');
+const { checkAvailableDrivers } = require('../Controllers/DriverRides.controller');
 
 /**
  * @swagger
@@ -761,4 +763,286 @@ router.post('/driver/register', [
   check('vehicleDetails.licensePlate').notEmpty().withMessage('Vehicle license plate is required')
 ], registerDriver);
 
+/**
+ * @swagger
+ * /clientRide/checkingAvailableDrivers:
+ *   post:
+ *     summary: Check available drivers and pricing for a ride
+ *     description: Retrieves available drivers around the client based on their current location and destination, along with pricing details by category.
+ *     tags:
+ *       - Client Ride
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - currentLocation
+ *               - destination
+ *             properties:
+ *               currentLocation:
+ *                 type: object
+ *                 properties:
+ *                   latitude:
+ *                     type: number
+ *                     example: 41.8781
+ *                   longitude:
+ *                     type: number
+ *                     example: -87.6298
+ *               destination:
+ *                 type: object
+ *                 properties:
+ *                   latitude:
+ *                     type: number
+ *                     example: 29.7604
+ *                   longitude:
+ *                     type: number
+ *                     example: -95.3698
+ *     responses:
+ *       200:
+ *         description: Successfully retrieved available drivers and pricing details
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: success
+ *                 message:
+ *                   type: string
+ *                   example: Available drivers and pricing details retrieved
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     distanceKm:
+ *                       type: number
+ *                       example: 1743.485
+ *                     categoryDetails:
+ *                       type: object
+ *                       properties:
+ *                         luxury:
+ *                           type: object
+ *                           properties:
+ *                             price:
+ *                               type: number
+ *                               example: 5230955
+ *                             seats:
+ *                               type: integer
+ *                               example: 4
+ *                             availableDriversCount:
+ *                               type: integer
+ *                               example: 1
+ *                             availableDrivers:
+ *                               type: array
+ *                               items:
+ *                                 type: object
+ *                                 properties:
+ *                                   _id:
+ *                                     type: string
+ *                                     example: 689758c6e5a596b9d2380e3c
+ *                                   name:
+ *                                     type: string
+ *                                     example: John Doe
+ *                                   location:
+ *                                     type: object
+ *                                     properties:
+ *                                       type:
+ *                                         type: string
+ *                                         example: Point
+ *                                       coordinates:
+ *                                         type: array
+ *                                         items:
+ *                                           type: number
+ *                                         example: [-87.6298, 41.8781]
+ *                         xl:
+ *                           type: object
+ *                           properties:
+ *                             price:
+ *                               type: number
+ *                               example: 4184864
+ *                             seats:
+ *                               type: integer
+ *                               example: 7
+ *                             availableDriversCount:
+ *                               type: integer
+ *                               example: 0
+ *                             availableDrivers:
+ *                               oneOf:
+ *                                 - type: string
+ *                                   example: No available drivers for this destination
+ *                                 - type: array
+ *                                   items:
+ *                                     type: object
+ *                         comfort:
+ *                           type: object
+ *                           properties:
+ *                             price:
+ *                               type: number
+ *                               example: 3487470
+ *                             seats:
+ *                               type: integer
+ *                               example: 4
+ *                             availableDriversCount:
+ *                               type: integer
+ *                               example: 0
+ *                             availableDrivers:
+ *                               oneOf:
+ *                                 - type: string
+ *                                   example: No available drivers for this destination
+ *                                 - type: array
+ *                                   items:
+ *                                     type: object
+ *       400:
+ *         description: Validation error
+ *       401:
+ *         description: Unauthorized (missing or invalid token)
+ *       500:
+ *         description: Internal server error
+ */
+router.post(
+  '/checkingAvailableDrivers',
+  authMiddleware('client'),
+  Limiter,
+  [
+    check('currentLocation.latitude').isFloat({ min: -90, max: 90 }).withMessage('Valid current latitude (-90 to 90) required'),
+    check('currentLocation.longitude').isFloat({ min: -180, max: 180 }).withMessage('Valid current longitude (-180 to 180) required'),
+    check('destination.latitude').isFloat({ min: -90, max: 90 }).withMessage('Valid destination latitude (-90 to 90) required'),
+    check('destination.longitude').isFloat({ min: -180, max: 180 }).withMessage('Valid destination longitude (-180 to 180) required')
+  ],
+  checkAvailableDrivers
+);
+/**
+* @Swagger
+paths:
+  /clientRide/calculate-price:
+    post:
+      summary: Calculate ride price
+      description: Calculates the ride price between the client's current location and destination.
+      tags:
+        - Ride
+      security:
+        - bearerAuth: []   # JWT auth (your authMiddleware('client'))
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - currentLocation
+                - destination
+              properties:
+                currentLocation:
+                  type: object
+                  required:
+                    - latitude
+                    - longitude
+                  properties:
+                    latitude:
+                      type: number
+                      format: float
+                      minimum: -90
+                      maximum: 90
+                      example: 41.8781
+                    longitude:
+                      type: number
+                      format: float
+                      minimum: -180
+                      maximum: 180
+                      example: -87.6298
+                destination:
+                  type: object
+                  required:
+                    - latitude
+                    - longitude
+                  properties:
+                    latitude:
+                      type: number
+                      format: float
+                      minimum: -90
+                      maximum: 90
+                      example: 29.7604
+                    longitude:
+                      type: number
+                      format: float
+                      minimum: -180
+                      maximum: 180
+                      example: -95.3698
+      responses:
+        '200':
+          description: Ride price calculated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  message:
+                    type: string
+                    example: Ride prices calculated
+                  data:
+                    type: object
+                    properties:
+                      distanceKm:
+                        type: number
+                        example: 1743.485
+                      prices:
+                        type: object
+                        properties:
+                          luxury:
+                            type: object
+                            properties:
+                              price:
+                                type: number
+                                example: 5230955
+                              seats:
+                                type: integer
+                                example: 4
+                          xl:
+                            type: object
+                            properties:
+                              price:
+                                type: number
+                                example: 4184864
+                              seats:
+                                type: integer
+                                example: 7
+                          comfort:
+                            type: object
+                            properties:
+                              price:
+                                type: number
+                                example: 3487470
+                              seats:
+                                type: integer
+                                example: 4
+        '400':
+          description: Invalid request body (validation error)
+        '401':
+          description: Unauthorized (missing/invalid token)
+        '429':
+          description: Too many requests (rate limited)
+        '500':
+          description: Internal server error
+
+ */
+router.post(
+  '/calculate-price',
+  authMiddleware('client'),
+  mapQueryToBody,
+  Limiter,
+  [
+    check('currentLocation.latitude').isFloat({ min: -90, max: 90 }).withMessage('Valid current latitude (-90 to 90) required'),
+    check('currentLocation.longitude').isFloat({ min: -180, max: 180 }).withMessage('Valid current longitude (-180 to 180) required'),
+    check('destination.latitude').isFloat({ min: -90, max: 90 }).withMessage('Valid destination latitude (-90 to 90) required'),
+    check('destination.longitude').isFloat({ min: -180, max: 180 }).withMessage('Valid destination longitude (-180 to 180) required')
+  ],
+  calculateRidePrice
+);
 module.exports = router;
