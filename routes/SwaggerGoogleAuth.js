@@ -1061,16 +1061,18 @@ router.post(
 /**
  * @swagger
  * /driver/websocket:
- * this /driver/websocket is not the endpoint , it is here to make this section visible
  *   get:
  *     summary: WebSocket connection (Driver only)
  *     tags: [Driver WebSocket]
  *     description: |
+ *       ⚠️ Note: `/driver/websocket` is **not a real REST endpoint**.  
+ *       It exists only to document the WebSocket connection for drivers.  
+ *
  *       Drivers connect to the **Socket.IO server** for live location + availability updates.  
  *       The connection is established via **WebSocket** with query parameters.  
  *
  *       Example connection URL:
- *       ```this is the socket.io connection endpoint gan gan 
+ *       ```
  *       wss://sarriride.onrender.com?token=<ACCESS_TOKEN>&ETO=4&transport=websocket
  *       ```
  *
@@ -1120,8 +1122,9 @@ router.post(
  *       }
  *       ```
  *     responses:
- *       101:
+ *       '101':
  *         description: WebSocket upgrade successful
  */
+
 
 module.exports = router;
