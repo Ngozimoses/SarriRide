@@ -1049,4 +1049,79 @@ router.post(
   ],
   calculateRidePrice
 );
+
+
+/**
+ * @swagger
+ * tags:
+ *   name: Driver WebSocket
+ *   description: Real-time WebSocket connection for driver location + availability
+ */
+
+/**
+ * @swagger
+ * /driver/websocket:
+ * this /driver/websocket is not the endpoint , it is here to make this section visible
+ *   get:
+ *     summary: WebSocket connection (Driver only)
+ *     tags: [Driver WebSocket]
+ *     description: |
+ *       Drivers connect to the **Socket.IO server** for live location + availability updates.  
+ *       The connection is established via **WebSocket** with query parameters.  
+ *
+ *       Example connection URL:
+ *       ```this is the socket.io connection endpoint gan gan 
+ *       wss://sarriride.onrender.com?token=<ACCESS_TOKEN>&ETO=4&transport=websocket
+ *       ```
+ *
+ *       **Origin header** (required):
+ *       ```
+ *       origin: https://sarriride.onrender.com
+ *       ```
+ *
+ *       ### Query Parameters:
+ *       - `token` (string, required): Driver `accessToken` returned at login (`data.accessToken`).  
+ *       - `ETO` (integer, optional): Engine.IO parameter (use `4`).  
+ *       - `transport` (string, required): Must be `"websocket"`.  
+ *
+ *       ---
+ *
+ *       ### Event: `updateLocation`
+ *       **Client → Server**
+ *       ```json
+ *       {
+ *         "latitude": 40.7128,
+ *         "longitude": -74.0060,
+ *         "availabilityStatus": "available"
+ *       }
+ *       ```
+ *
+ *       - When the driver goes **online** → send `"available"`.  
+ *       - When the driver is **booked/accepts a ride** → send `"on_trip"`.  
+ *       - When the driver goes **offline** → send `"unavailable"`.  
+ *
+ *       ⚡ Send periodically (every 5–10s) or on meaningful movement.
+ *
+ *       ---
+ *
+ *       ### Example Server Response
+ *       ```json
+ *       {
+ *         "status": "success",
+ *         "message": "Location updated successfully",
+ *         "data": {
+ *           "location": {
+ *             "type": "Point",
+ *             "coordinates": [-74.0060, 40.7128]
+ *           },
+ *           "availabilityStatus": "available",
+ *           "lastLocationUpdate": "2025-08-23T13:55:59.371Z"
+ *         }
+ *       }
+ *       ```
+ *     responses:
+ *       101:
+ *         description: WebSocket upgrade successful
+ */
+
 module.exports = router;
