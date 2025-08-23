@@ -921,121 +921,120 @@ router.post(
   checkAvailableDrivers
 );
 /**
-* @Swagger
-paths:
-  /clientRide/calculate-price:
-    post:
-      summary: Calculate ride price
-      description: Calculates the ride price between the client's current location and destination.
-      tags:
-        - Ride
-      security:
-        - bearerAuth: []   # JWT auth (your authMiddleware('client'))
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - currentLocation
-                - destination
-              properties:
-                currentLocation:
-                  type: object
-                  required:
-                    - latitude
-                    - longitude
-                  properties:
-                    latitude:
-                      type: number
-                      format: float
-                      minimum: -90
-                      maximum: 90
-                      example: 41.8781
-                    longitude:
-                      type: number
-                      format: float
-                      minimum: -180
-                      maximum: 180
-                      example: -87.6298
-                destination:
-                  type: object
-                  required:
-                    - latitude
-                    - longitude
-                  properties:
-                    latitude:
-                      type: number
-                      format: float
-                      minimum: -90
-                      maximum: 90
-                      example: 29.7604
-                    longitude:
-                      type: number
-                      format: float
-                      minimum: -180
-                      maximum: 180
-                      example: -95.3698
-      responses:
-        '200':
-          description: Ride price calculated successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  status:
-                    type: string
-                    example: success
-                  message:
-                    type: string
-                    example: Ride prices calculated
-                  data:
-                    type: object
-                    properties:
-                      distanceKm:
-                        type: number
-                        example: 1743.485
-                      prices:
-                        type: object
-                        properties:
-                          luxury:
-                            type: object
-                            properties:
-                              price:
-                                type: number
-                                example: 5230955
-                              seats:
-                                type: integer
-                                example: 4
-                          xl:
-                            type: object
-                            properties:
-                              price:
-                                type: number
-                                example: 4184864
-                              seats:
-                                type: integer
-                                example: 7
-                          comfort:
-                            type: object
-                            properties:
-                              price:
-                                type: number
-                                example: 3487470
-                              seats:
-                                type: integer
-                                example: 4
-        '400':
-          description: Invalid request body (validation error)
-        '401':
-          description: Unauthorized (missing/invalid token)
-        '429':
-          description: Too many requests (rate limited)
-        '500':
-          description: Internal server error
-
+ * @swagger
+ * paths:
+ *   /clientRide/calculate-price:
+ *     post:
+ *       summary: Calculate ride price
+ *       description: Calculates the ride price between the client's current location and destination.
+ *       tags:
+ *         - Ride
+ *       security:
+ *         - bearerAuth: []
+ *       requestBody:
+ *         required: true
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               required:
+ *                 - currentLocation
+ *                 - destination
+ *               properties:
+ *                 currentLocation:
+ *                   type: object
+ *                   required:
+ *                     - latitude
+ *                     - longitude
+ *                   properties:
+ *                     latitude:
+ *                       type: number
+ *                       format: float
+ *                       minimum: -90
+ *                       maximum: 90
+ *                       example: 41.8781
+ *                     longitude:
+ *                       type: number
+ *                       format: float
+ *                       minimum: -180
+ *                       maximum: 180
+ *                       example: -87.6298
+ *                 destination:
+ *                   type: object
+ *                   required:
+ *                     - latitude
+ *                     - longitude
+ *                   properties:
+ *                     latitude:
+ *                       type: number
+ *                       format: float
+ *                       minimum: -90
+ *                       maximum: 90
+ *                       example: 29.7604
+ *                     longitude:
+ *                       type: number
+ *                       format: float
+ *                       minimum: -180
+ *                       maximum: 180
+ *                       example: -95.3698
+ *       responses:
+ *         '200':
+ *           description: Ride price calculated successfully
+ *           content:
+ *             application/json:
+ *               schema:
+ *                 type: object
+ *                 properties:
+ *                   status:
+ *                     type: string
+ *                     example: success
+ *                   message:
+ *                     type: string
+ *                     example: Ride prices calculated
+ *                   data:
+ *                     type: object
+ *                     properties:
+ *                       distanceKm:
+ *                         type: number
+ *                         example: 1743.485
+ *                       prices:
+ *                         type: object
+ *                         properties:
+ *                           luxury:
+ *                             type: object
+ *                             properties:
+ *                               price:
+ *                                 type: number
+ *                                 example: 5230955
+ *                               seats:
+ *                                 type: integer
+ *                                 example: 4
+ *                           xl:
+ *                             type: object
+ *                             properties:
+ *                               price:
+ *                                 type: number
+ *                                 example: 4184864
+ *                               seats:
+ *                                 type: integer
+ *                                 example: 7
+ *                           comfort:
+ *                             type: object
+ *                             properties:
+ *                               price:
+ *                                 type: number
+ *                                 example: 3487470
+ *                               seats:
+ *                                 type: integer
+ *                                 example: 4
+ *         '400':
+ *           description: Invalid request body (validation error)
+ *         '401':
+ *           description: Unauthorized (missing/invalid token)
+ *         '429':
+ *           description: Too many requests (rate limited)
+ *         '500':
+ *           description: Internal server error
  */
 router.post(
   '/calculate-price',
