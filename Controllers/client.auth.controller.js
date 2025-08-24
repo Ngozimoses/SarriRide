@@ -303,109 +303,6 @@ const ClientLogin = async (req, res) => {
   }
 };
 
-// const ClientRefreshToken = async (req, res) => {
-//   try {
-//     const errors = validationResult(req);
-//     if (!errors.isEmpty()) {
-//       logger.warn('Validation failed during client refresh token', { errors: errors.array() });
-//       return res.status(400).json({ status: 'error', message: 'Invalid request', data: { errors: errors.array() } });
-//     }
-
-//     const { refreshToken: encryptedRefreshToken } = req.body;
-//     if (!encryptedRefreshToken) {
-//       logger.warn('Refresh token missing for client');
-//       return res.status(401).json({ status: 'error', message: 'Refresh token required' });
-//     }
-
-//     let refreshToken;
-//     try {
-//       refreshToken = decrypt(encryptedRefreshToken);
-//     } catch (error) {
-//       logger.warn('Invalid client refresh token format', { error: error.message });
-//       return res.status(403).json({ status: 'error', message: 'Invalid refresh token' });
-//     }
-
-//     const hashedToken = await bcrypt.hash(refreshToken, 10);
-//     const tokenDoc = await RefreshToken.findOne({
-//       token: hashedToken,
-//       userModel: 'Client',
-//       revoked: false,
-//       expiresAt: { $gt: new Date() },
-//     }).lean();
-
-//     if (!tokenDoc) {
-//       logger.warn('Invalid or expired client refresh token');
-//       return res.status(403).json({ status: 'error', message: 'Invalid refresh token' });
-//     }
-
-//     const clientCacheKey = `${CONFIG.REDIS_KEY_PREFIX}user:${tokenDoc.userId}:client`;
-//     let client = await redis.get(clientCacheKey);
-//     if (client) {
-//       client = JSON.parse(client);
-//     } else {
-//       client = await Client.findOne({ _id: tokenDoc.userId, role: 'client' }).lean();
-//       if (client) {
-//         await redis.set(clientCacheKey, JSON.stringify(client), 'EX', 3600);
-//       }
-//     }
-
-//     if (!client) {
-//       logger.warn('Client not found for refresh token', { clientId: tokenDoc.userId });
-//       return res.status(404).json({ status: 'error', message: 'Client not found' });
-//     }
-
-//     const newAccessToken = jwt.sign({ id: client._id, role: client.role }, process.env.JWT_SECRET, {
-//       expiresIn: CONFIG.JWT_ACCESS_TOKEN_EXPIRY,
-//     });
-//     const newRefreshToken = crypto.randomBytes(64).toString('hex');
-//     const hashedNewToken = await bcrypt.hash(newRefreshToken, 10);
-//     const refreshTokenExpires = new Date();
-//     refreshTokenExpires.setDate(refreshTokenExpires.getDate() + CONFIG.REFRESH_TOKEN_EXPIRY_DAYS);
-
-//     const newTokenDoc = new RefreshToken({
-//       userId: client._id,
-//       userModel: 'Client',
-//       token: hashedNewToken,
-//       expiresAt: refreshTokenExpires,
-//       userAgent: req.headers['user-agent'] || 'unknown',
-//       ipAddress: req.ip || 'unknown',
-//     });
-
-//     try {
-//       await Promise.all([
-//         RefreshToken.updateOne({ _id: tokenDoc._id }, { $set: { revoked: true, revokedAt: new Date(), replacedByTokenId: newTokenDoc._id } }),
-//         newTokenDoc.save(),
-//         redis.set(`${CONFIG.REDIS_KEY_PREFIX}blacklist:${tokenDoc._id}`, 'revoked', 'EX', Math.floor((tokenDoc.expiresAt - Date.now()) / 1000)),
-//       ]);
-//     } catch (redisError) {
-//       logger.error('Redis error during token refresh', { error: redisError.message });
-//       throw redisError; // Let the outer catch handle rollback if needed
-//     }
-
-//     const encryptedNewAccessToken = encrypt(newAccessToken);
-//     const encryptedNewRefreshToken = encrypt(newRefreshToken);
-
-//     logger.info('Client access token refreshed', { clientId: client._id, email: client.email });
-//     return res.json({
-//       status: 'success',
-//       message: 'Access token refreshed',
-//       data: {
-//         client: {
-//           name: client.FirstName,
-//           _id: client._id,
-//           email: client.email,
-//           role: client.role,
-//           isVerified: client.isVerified,
-//         },
-//         accessToken: encryptedNewAccessToken,
-//         refreshToken: encryptedNewRefreshToken,
-//       },
-//     });
-//   } catch (error) {
-//     logger.error('Client refresh token error', { error: error.message });
-//     return res.status(500).json({ status: 'error', message: 'An unexpected error occurred' });
-//   }
-// };
 
 const ClientRefreshToken = async (req, res) => {
   try {
@@ -429,7 +326,7 @@ const ClientRefreshToken = async (req, res) => {
       return res.status(403).json({ status: 'error', message: 'Invalid refresh token' });
     }
 
-    // 🔥 Efficient lookup: Find valid tokens only
+    //  Efficient lookup: Find valid tokens only
     const tokenDocs = await RefreshToken.find({
       userModel: 'Client',
       revoked: false,
@@ -450,7 +347,7 @@ const ClientRefreshToken = async (req, res) => {
       return res.status(403).json({ status: 'error', message: 'Invalid refresh token' });
     }
 
-    // ✅ Scope by userId for efficiency & security
+    //  Scope by userId for efficiency & security
     const clientCacheKey = `${CONFIG.REDIS_KEY_PREFIX}user:${tokenDoc.userId}:client`;
     let client = await redis.get(clientCacheKey);
     if (client) {
@@ -467,7 +364,7 @@ const ClientRefreshToken = async (req, res) => {
       return res.status(404).json({ status: 'error', message: 'Client not found' });
     }
 
-    // 🔐 Generate new tokens
+    //  Generate new tokens
     const newAccessToken = jwt.sign({ id: client._id, role: client.role }, process.env.JWT_SECRET, {
       expiresIn: CONFIG.JWT_ACCESS_TOKEN_EXPIRY,
     });

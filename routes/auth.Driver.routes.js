@@ -7,10 +7,21 @@ const {verifyEmail, verifyDriverOtp, registerDriver, uploadImages} = require('..
 const { loginValidation } = require('../middlewares/Validation');
 const {authMiddleware} = require('../middlewares/auth.js');
 const {DriverLogin} = require('../Controllers/Driver.controller.js');
+const { DriverRefreshToken } = require('../Controllers/Driver.controller.js')
+const {
+  registrationValidation,
+  loginValidation,
+  refreshTokenValidation,
+} = require('../middlewares/Validation');
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 10,
   message: { status: 'error', message: 'Too many login attempts, please try again later' },
+});
+const refreshLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 50,
+  message: { status: 'error', message: 'Too many refresh attempts, please try again later' },
 });
 router.post('/driver/verifyDriverEmail', [
   check('email').isEmail().withMessage('Valid email is required'),
@@ -66,4 +77,7 @@ router.post('/driver/upload-images', authMiddleware('driver'),
 );
 
 router.post('/driver/login', DriverLogin, authMiddleware('driver'), loginValidation, loginLimiter);
+
+router.post('/driver/refresh-token', refreshTokenValidation,refreshLimiter,DriverRefreshToken);
+
 module.exports = router;

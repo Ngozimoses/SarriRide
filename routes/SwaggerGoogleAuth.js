@@ -23,7 +23,11 @@ const Limiter = rateLimit({
   max: 100,
   message: { status: 'error', message: 'Too many requests, please try again later' }
 });
-
+const refreshLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 50,
+  message: { status: 'error', message: 'Too many refresh attempts, please try again later' },
+});
 const {
   ClientRegistration,
   ClientLogin,
@@ -116,6 +120,64 @@ router.get('/auth/client/google/callback',
     });
   }
 );
+/**
+ * @swagger
+ * /auth/client/refresh-Token:
+ *   post:
+ *     summary: Refresh Access Token
+ *     tags: [Client Authentication]
+ *     description: |
+ *       This endpoint allows a **client** to refresh their `accessToken` using a valid `refreshToken`.  
+ *       The `refreshToken` is issued during the **initial login** and must be securely stored on the frontend.  
+ *
+ *       ⚠️ **Important Notes for Frontend Developers:**
+ *       - Always pass the `refreshToken` received during login.  
+ *       - If the `refreshToken` has expired or is invalid, the client must log in again.  
+ *       - The new response will include both a new `accessToken` and a new `refreshToken`.  
+ *       - Replace the old tokens with the new ones after each refresh.  
+ *
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - refreshToken
+ *             properties:
+ *               refreshToken:
+ *                 type: string
+ *                 description: >
+ *                   The `refreshToken` received during the **initial login**.  
+ *                   It is a long, encrypted string and must be stored securely on the client side.  
+ *                   Use it to obtain a new `accessToken` without requiring the user to log in again.  
+ *                 example: c243420af41a0f2099cf56c931ac6f94:0f3a46296ff05655a93eb2414d26d3fca0dd15ef324a180ed514ee6b3190b5105e56ac0947d12a8882df1212a36c6c02e862dafcd284e35bb0dfd4dba0131493dd45b83e36159f32ab58c407b39598627d57ad97eac2c6e4d703a4eace8b8baf6b9b838a79f85cd6e4899049a6239510b39525bc4d75d180ee9c7c10f4a7153bf2a2648b2a687962b06f29debc373c35
+ *     responses:
+ *       "200":
+ *         description: Successfully refreshed access token
+ *         content:
+ *           application/json:
+ *             example:
+ *               status: success
+ *               message: Access token refreshed
+ *               data:
+ *                 client:
+ *                   name: SarriRide
+ *                   _id: 68a49cf858e6443d3ed85f0f
+ *                   email: sarriRide@gmail.com
+ *                   role: client
+ *                   isVerified: true
+ *                 accessToken: 3978c826adb39be102aba90800db353c:70563d3630aa404f40333e38a94d57615a2e30ffd8b57ed4c7e0b226369dcba0acfa34773daa9e1761c5d020f8225c5091c30e43195140d834d72f667794bd092809c52077a4e5fdf9167e598d54c9abd8db0d7699bb0bec38ed7ac4e0cdb312072ec87729e9326400fd91bb530c3334e63885901fbb7af383edbba60de2db2d8de99cb4b56eec62cfda4ecaf0792b2c423e2ea7aa028062ae2746797cea54c6cc1614acd6253a8a048e5bb57b96ac1012fb1ec9eedad47ba43cebb880fc6e980a644010f967cca090e98ccca0943121
+ *                 refreshToken: 05393587823329736b77e63eecaf8469:6325aee7c666ea10d60a310764f4bf32bd0a9032ba9afb5680078d57643bf12cdd0602693e032e4a3ed9bffd011c84bae155506984d00abc0b08a3ac4d173224e3429cbb5ab2ee6c5a1c353d267669e815e81ed919578685544a32b00c740db0f32a4b5ff0328d5adc7db74331a4bb5f8c9cf16a81603d594e4f3e32bc0cc213a34d1664324583c79b135c0b831dad6f
+ *       "400":
+ *         description: Invalid request or refresh token missing
+ *       "401":
+ *         description: Unauthorized – Invalid or expired refresh token
+ *       "500":
+ *         description: Server error
+ */
+
+router.post('/client/refresh-token', refreshLimiter, refreshTokenValidation, ClientRefreshToken);
 
 /**
  * @swagger
