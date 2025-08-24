@@ -10,7 +10,6 @@ const {DriverLogin} = require('../Controllers/Driver.controller.js');
 const { DriverRefreshToken } = require('../Controllers/Driver.controller.js')
 const {
   registrationValidation,
-  loginValidation,
   refreshTokenValidation,
 } = require('../middlewares/Validation');
 const loginLimiter = rateLimit({
