@@ -5,6 +5,7 @@ const { body, check } = require('express-validator');
 const {verifyEmail, verifyDriverOtp, registerDriver, uploadImages} = require('../Controllers/Driver.controller.js');
 const {DriverLogin} = require('../Controllers/Driver.controller.js');
 const { calculateRidePrice, mapQueryToBody } = require('../Controllers/Client.controller');
+const { DriverRefreshToken } = require('../Controllers/Driver.controller.js')
 const router = express.Router();
 const {
   registrationValidation,
@@ -1188,5 +1189,62 @@ router.post(
  *         description: WebSocket upgrade successful
  */
 
+/**
+ * @swagger
+ * /driverAuth/driver/refresh-token:
+ *   post:
+ *     summary: Refresh Driver Access Token
+ *     tags: [Driver Authentication]
+ *     description: |
+ *       This endpoint allows a **driver** to refresh their `accessToken` using a valid `refreshToken`.  
+ *       The `refreshToken` is issued during the **initial driver login** and must be securely stored on the frontend.  
+ *
+ *       ⚠️ **Important Notes for Frontend Developers:**
+ *       - Always pass the `refreshToken` received during driver login.  
+ *       - If the `refreshToken` has expired or is invalid, the driver must log in again.  
+ *       - The new response will include both a new `accessToken` and a new `refreshToken`.  
+ *       - Replace the old tokens with the new ones after each refresh.  
+ *
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - refreshToken
+ *             properties:
+ *               refreshToken:
+ *                 type: string
+ *                 description: >
+ *                   The `refreshToken` received during the **driver login**.  
+ *                   It is a long, encrypted string and must be stored securely on the client side.  
+ *                   Use it to obtain a new `accessToken` without requiring the driver to log in again.  
+ *                 example: 0826fbec11f8f8e969b0c8dbf2dd1c2b:f8c02549c273b9dba65b94cc610aeafc5baddef35fe4ce4e7a4f04c249e7ff94b33e89c5738e1bd461b39ef466ba57a49456c64c7243389285b8eb40c26060756ca090a8d4932e972426138fbe2707533e2d25b361f8b4fd9713077a73e210ec43fabd0c81a30c8407a2f9f65766bdd637666e53cfc2169c4d165986f8e1445b8cf10bca61c5227eb5b36c3b0912e96
+ *     responses:
+ *       "200":
+ *         description: Successfully refreshed driver access token
+ *         content:
+ *           application/json:
+ *             example:
+ *               status: success
+ *               message: Access token refreshed
+ *               data:
+ *                 driver:
+ *                   name: John
+ *                   _id: 689758c6e5a596b9d2380e3c
+ *                   email: elijayboy87@gmail.com
+ *                   role: driver
+ *                   isVerified: true
+ *                 accessToken: 560da709694a3b9f335e0a6c38759265:df7e38fe8cf7c4a2f603fbca0cbfd87b69d7ff0255c4d349dc4b7b3d7f77db32f941b5a53327978da6350bae9ba4d5691a999bb5a817939fb264f582ae87c66c0e71a569142945559e38af722c533e0e237215d569202daec3fe290eed1f2f9c224da20f428242a9684636556e31ef07f7e7e68059bcb644e74f64c29d98083523358a19d252d787dca439bb4cf3efc71038bbb8f853a7f96e4724e1dd9590a6613eb709e3e712142fd7a9c2eac9cb750c8093befde444a3f2835737fafee3fa693a42ef24320d76ac12357ebcd86aa4
+ *                 refreshToken: c0ddf1129d0ff9f9393e9c56e7ccebaa:c269fb7e5dd05590b5b0a7203c5c6fed88de58dfeaed67b57614059b240276488fe92b7d4c89861d4bb24f3a55b53cc08bf0015ff6d576071140b32461778d44877e5fc92d6e3916ec0bf731114c725dc3e91c1fe795648d46921d495b9da56d1b826b5774286a91310a11511e29cf1cac1f1592d43af65c45646df53ea50cd47594277dde779d785f94d6bae175ee3f
+ *       "400":
+ *         description: Invalid request or refresh token missing
+ *       "401":
+ *         description: Unauthorized – Invalid or expired refresh token
+ *       "500":
+ *         description: Server error
+ */
+router.post('/driver/refresh-token', refreshTokenValidation,refreshLimiter,DriverRefreshToken);
 
 module.exports = router;

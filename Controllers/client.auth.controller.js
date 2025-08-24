@@ -426,8 +426,6 @@ const ClientRefreshToken = async (req, res) => {
   }
 };
 
-
-
 const ClientLogout = async (req, res) => {
   try {
     const { refreshToken: encryptedRefreshToken } = req.body;
