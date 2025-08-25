@@ -28,6 +28,7 @@ const logger = winston.createLogger({
 const CONFIG = {
   JWT_ACCESS_TOKEN_EXPIRY: '15m',
   REFRESH_TOKEN_EXPIRY_DAYS: 7,
+  REFRESH_TOKEN_EXPIRY_MS: 1 * 24 * 60 * 60 * 1000, // 1 day
   OTP_EXPIRY_MS: 3600000, // 1 hour
   MAX_LOGIN_ATTEMPTS: 5,
   ACCOUNT_LOCK_DURATION_MS: 15 * 60 * 1000, // 15 minutes
@@ -366,7 +367,7 @@ const ClientRefreshToken = async (req, res) => {
 
     //  Generate new tokens
     const newAccessToken = jwt.sign({ id: client._id, role: client.role }, process.env.JWT_SECRET, {
-      expiresIn: CONFIG.JWT_ACCESS_TOKEN_EXPIRY,
+      expiresIn: CONFIG.REFRESH_TOKEN_EXPIRY_MS,
     });
     const newRefreshToken = crypto.randomBytes(64).toString('hex');
     const hashedNewToken = await bcrypt.hash(newRefreshToken, 10);
