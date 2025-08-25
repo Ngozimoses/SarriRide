@@ -81,7 +81,7 @@ const bookRide = async (req, res) => {
         const drivers = await Driver.aggregate([
           {
             $geoNear: {
-              near: { type: 'Point', coordinates: [currentLocation.longitude, currentLocation.latitude] },
+              near: { type: 'Point', coordinates: [ currentLocation.latitude, currentLocation.longitude ] },
               distanceField: 'dist.calculated',
               maxDistance: 10000 * 1000, // 10km in meters
               query: { availabilityStatus: 'available', adminVerified: true, category },
