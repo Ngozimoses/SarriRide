@@ -41,6 +41,7 @@ const clientSchema = new mongoose.Schema({
     unique: true,
     sparse: true,
   },
+  fcmToken: { type: String, required: false },
   isVerified: {
     type: Boolean,
     default: false,
